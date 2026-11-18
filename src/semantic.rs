@@ -43,9 +43,7 @@ fn validate_expression(
             if declared.contains(name) {
                 Ok(())
             } else {
-                Err(Diagnostic::semantic(format!(
-                    "Undefined variable '{name}'"
-                )))
+                Err(Diagnostic::semantic(format!("Undefined variable '{name}'")))
             }
         }
         Expression::Group(inner) => validate_expression(inner, declared),
