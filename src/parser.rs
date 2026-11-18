@@ -183,10 +183,7 @@ mod tests {
             panic!("expected let statement");
         };
 
-        assert_eq!(
-            evaluate(value, &HashMap::new()).unwrap().to_string(),
-            "14"
-        );
+        assert_eq!(evaluate(value, &HashMap::new()).unwrap().to_string(), "14");
     }
 
     #[test]

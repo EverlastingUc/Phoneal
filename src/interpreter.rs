@@ -105,10 +105,9 @@ mod tests {
 
     #[test]
     fn prints_integer_and_string_values() {
-        let output = run(
-            "let greeting = \"hello\"; let answer = 6 * 7; print(greeting); print(answer);",
-        )
-        .unwrap();
+        let output =
+            run("let greeting = \"hello\"; let answer = 6 * 7; print(greeting); print(answer);")
+                .unwrap();
 
         assert_eq!(output, vec!["hello", "42"]);
     }

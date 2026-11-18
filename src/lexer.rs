@@ -60,9 +60,7 @@ impl Lexer {
                                 break TokenKind::String(value);
                             }
                             Some('\n') | None => {
-                                return Err(format!(
-                                    "Unterminated string at {line}:{column}"
-                                ));
+                                return Err(format!("Unterminated string at {line}:{column}"));
                             }
                             Some(_) => value.push(self.advance()),
                         }
@@ -75,9 +73,9 @@ impl Lexer {
                         number.push(self.advance());
                     }
 
-                    let value = number.parse::<i64>().map_err(|_| {
-                        format!("Integer out of range at {line}:{column}")
-                    })?;
+                    let value = number
+                        .parse::<i64>()
+                        .map_err(|_| format!("Integer out of range at {line}:{column}"))?;
 
                     TokenKind::Integer(value)
                 }
@@ -121,10 +119,7 @@ mod tests {
         let tokens = Lexer::new("let count = 42;").scan().unwrap();
 
         assert_eq!(tokens[0].kind, TokenKind::Let);
-        assert_eq!(
-            tokens[1].kind,
-            TokenKind::Identifier("count".to_owned())
-        );
+        assert_eq!(tokens[1].kind, TokenKind::Identifier("count".to_owned()));
         assert_eq!(tokens[3].kind, TokenKind::Integer(42));
         assert_eq!(tokens[4].kind, TokenKind::Semicolon);
     }

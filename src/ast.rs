@@ -15,9 +15,6 @@ pub enum Expression {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    Let {
-        name: String,
-        value: Expression,
-    },
+    Let { name: String, value: Expression },
     Print(Expression),
 }
