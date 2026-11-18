@@ -7,43 +7,28 @@ fn print_usage() {
 
 fn main() {
     let arguments: Vec<String> = env::args().collect();
-
     if arguments.len() != 3 || !matches!(arguments[1].as_str(), "run" | "check") {
         print_usage();
         process::exit(2);
     }
-
     let file_path = &arguments[2];
-
     if !file_path.ends_with(".phnl") {
         eprintln!("Expected a .phnl file");
         process::exit(2);
     }
-
     let source = fs::read_to_string(file_path).unwrap_or_else(|error| {
         eprintln!("Cannot read {file_path}: {error}");
         process::exit(1);
     });
-
     if arguments[1] == "check" {
         match phoneal::compile(&source) {
             Ok(_) => println!("Syntax OK: {file_path}"),
-            Err(error) => {
-                eprintln!("Phoneal error: {error}");
-                process::exit(1);
-            }
+            Err(error) => { eprintln!("Phoneal: {error}"); process::exit(1); }
         }
     } else {
         match phoneal::run(&source) {
-            Ok(lines) => {
-                for line in lines {
-                    println!("{line}");
-                }
-            }
-            Err(error) => {
-                eprintln!("Phoneal error: {error}");
-                process::exit(1);
-            }
+            Ok(lines) => for line in lines { println!("{line}"); },
+            Err(error) => { eprintln!("Phoneal: {error}"); process::exit(1); }
         }
     }
 }
