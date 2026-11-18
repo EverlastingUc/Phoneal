@@ -260,7 +260,12 @@ mod tests {
         let statements = Parser::new(Lexer::new("let result = value;").scan().unwrap())
             .parse()
             .unwrap();
-        let Statement::Let { name_location, value, .. } = &statements[0] else {
+        let Statement::Let {
+            name_location,
+            value,
+            ..
+        } = &statements[0]
+        else {
             panic!("expected let statement");
         };
 

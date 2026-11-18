@@ -1,7 +1,4 @@
-use crate::{
-    diagnostic::SourceLocation,
-    token::TokenKind,
-};
+use crate::{diagnostic::SourceLocation, token::TokenKind};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
