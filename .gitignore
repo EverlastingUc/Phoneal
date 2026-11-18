@@ -1,0 +1,4 @@
+/target/
+*.phnlc
+*.log
+.DS_Store

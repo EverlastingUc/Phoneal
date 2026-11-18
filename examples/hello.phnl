@@ -1,0 +1,4 @@
+let greeting = "Hello from Phoneal!";
+let answer = 6 * 7;
+print(greeting);
+print(answer);
