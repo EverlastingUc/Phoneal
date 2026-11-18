@@ -4,6 +4,7 @@ use std::fmt;
 pub enum DiagnosticStage {
     Lexing,
     Parsing,
+    Semantic,
     Runtime,
 }
 
@@ -12,6 +13,7 @@ impl fmt::Display for DiagnosticStage {
         formatter.write_str(match self {
             Self::Lexing => "lexer",
             Self::Parsing => "parser",
+            Self::Semantic => "semantic",
             Self::Runtime => "runtime",
         })
     }
@@ -58,6 +60,10 @@ impl Diagnostic {
 
     pub fn parsing(message: impl Into<String>, line: usize, column: usize) -> Self {
         Self::at(DiagnosticStage::Parsing, message, line, column)
+    }
+
+    pub fn semantic(message: impl Into<String>) -> Self {
+        Self::new(DiagnosticStage::Semantic, message)
     }
 
     pub fn runtime(message: impl Into<String>) -> Self {
