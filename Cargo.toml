@@ -1,0 +1,12 @@
+[package]
+name = "phoneal"
+version = "0.1.0"
+edition = "2021"
+description = "An experimental security-first programming language"
+license = "MIT"
+
+[[bin]]
+name = "phnl"
+path = "src/main.rs"
+
+[dependencies]
