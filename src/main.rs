@@ -1,34 +1,49 @@
-use std::{collections::HashMap, env, fs, process};
+use std::{env, fs, process};
 
-#[derive(Debug, Clone, PartialEq)]
-enum Token { Let, Print, Ident(String), Int(i64), Str(String), Eq, Plus, Minus, Star, Slash, LParen, RParen, Semi, Eof }
-#[derive(Debug, Clone)] struct Located { kind: Token, line: usize, col: usize }
-struct Lexer { chars: Vec<char>, pos: usize, line: usize, col: usize }
-impl Lexer {
- fn new(s:&str)->Self{Self{chars:s.chars().collect(),pos:0,line:1,col:1}}
- fn peek(&self)->Option<char>{self.chars.get(self.pos).copied()}
- fn advance(&mut self)->char{let c=self.chars[self.pos];self.pos+=1;if c=='\n'{self.line+=1;self.col=1}else{self.col+=1}c}
- fn scan(mut self)->Result<Vec<Located>,String>{let mut out=Vec::new();while let Some(c)=self.peek(){let(line,col)=(self.line,self.col);let kind=match self.advance(){' '| '\r'|'\t'|'\n'=>continue,'='=>Token::Eq,'+'=>Token::Plus,'-'=>Token::Minus,'*'=>Token::Star,'/'=>Token::Slash,'('=>Token::LParen,')'=>Token::RParen,';'=>Token::Semi,'"'=>{let mut s=String::new();loop{match self.peek(){Some('"')=>{self.advance();break Token::Str(s)},Some('\n')|None=>return Err(format!("Unterminated string at {line}:{col}")),Some(_)=>s.push(self.advance())}}},ch if ch.is_ascii_digit()=>{let mut n=ch.to_string();while self.peek().is_some_and(|x|x.is_ascii_digit()){n.push(self.advance())}Token::Int(n.parse().map_err(|_|format!("Integer out of range at {line}:{col}"))?)},ch if ch.is_ascii_alphabetic()||ch=='_'=>{let mut id=ch.to_string();while self.peek().is_some_and(|x|x.is_ascii_alphanumeric()||x=='_'){id.push(self.advance())}match id.as_str(){"let"=>Token::Let,"print"=>Token::Print,_=>Token::Ident(id)}},other=>return Err(format!("Unexpected character '{other}' at {line}:{col}"))};out.push(Located{kind,line,col});}out.push(Located{kind:Token::Eof,line:self.line,col:self.col});Ok(out)}
+fn print_usage() {
+    eprintln!("Phoneal 0.1.0 — Rust-hosted language prototype");
+    eprintln!("Usage: phnl <run|check> <file.phnl>");
 }
-#[derive(Debug,Clone)] enum Expr{Int(i64),Str(String),Var(String),Binary(Box<Expr>,Token,Box<Expr>),Group(Box<Expr>)}
-enum Stmt{Let(String,Expr),Print(Expr)}
-struct Parser{tokens:Vec<Located>,pos:usize}
-impl Parser{
- fn new(tokens:Vec<Located>)->Self{Self{tokens,pos:0}}
- fn peek(&self)->&Located{&self.tokens[self.pos]}
- fn advance(&mut self)->Located{let t=self.tokens[self.pos].clone();if t.kind!=Token::Eof{self.pos+=1}t}
- fn take(&mut self,k:Token)->bool{if self.peek().kind==k{self.advance();true}else{false}}
- fn require(&mut self,k:Token,msg:&str)->Result<(),String>{if self.take(k){Ok(())}else{let t=self.peek();Err(format!("{msg} at {}:{}",t.line,t.col))}}
- fn parse(&mut self)->Result<Vec<Stmt>,String>{let mut v=Vec::new();while self.peek().kind!=Token::Eof{v.push(self.statement()?)}Ok(v)}
- fn statement(&mut self)->Result<Stmt,String>{if self.take(Token::Let){let name=match self.advance().kind{Token::Ident(s)=>s,_=>return Err("Expected variable name after let".into())};self.require(Token::Eq,"Expected '='")?;let e=self.expression()?;self.require(Token::Semi,"Expected ';'")?;return Ok(Stmt::Let(name,e))}if self.take(Token::Print){self.require(Token::LParen,"Expected '('")?;let e=self.expression()?;self.require(Token::RParen,"Expected ')'")?;self.require(Token::Semi,"Expected ';'")?;return Ok(Stmt::Print(e))}let t=self.peek();Err(format!("Expected let or print at {}:{}",t.line,t.col))}
- fn expression(&mut self)->Result<Expr,String>{self.addition()}
- fn addition(&mut self)->Result<Expr,String>{let mut e=self.multiplication()?;loop{let op=if self.take(Token::Plus){Some(Token::Plus)}else if self.take(Token::Minus){Some(Token::Minus)}else{None};if let Some(op)=op{e=Expr::Binary(Box::new(e),op,Box::new(self.multiplication()?))}else{break}}Ok(e)}
- fn multiplication(&mut self)->Result<Expr,String>{let mut e=self.primary()?;loop{let op=if self.take(Token::Star){Some(Token::Star)}else if self.take(Token::Slash){Some(Token::Slash)}else{None};if let Some(op)=op{e=Expr::Binary(Box::new(e),op,Box::new(self.primary()?))}else{break}}Ok(e)}
- fn primary(&mut self)->Result<Expr,String>{let t=self.advance();match t.kind{Token::Int(n)=>Ok(Expr::Int(n)),Token::Str(s)=>Ok(Expr::Str(s)),Token::Ident(s)=>Ok(Expr::Var(s)),Token::LParen=>{let e=self.expression()?;self.require(Token::RParen,"Expected ')'")?;Ok(Expr::Group(Box::new(e)))},_=>Err(format!("Expected expression at {}:{}",t.line,t.col))}}
+
+fn main() {
+    let arguments: Vec<String> = env::args().collect();
+
+    if arguments.len() != 3 || !matches!(arguments[1].as_str(), "run" | "check") {
+        print_usage();
+        process::exit(2);
+    }
+
+    let file_path = &arguments[2];
+
+    if !file_path.ends_with(".phnl") {
+        eprintln!("Expected a .phnl file");
+        process::exit(2);
+    }
+
+    let source = fs::read_to_string(file_path).unwrap_or_else(|error| {
+        eprintln!("Cannot read {file_path}: {error}");
+        process::exit(1);
+    });
+
+    if arguments[1] == "check" {
+        match phoneal::compile(&source) {
+            Ok(_) => println!("Syntax OK: {file_path}"),
+            Err(error) => {
+                eprintln!("Phoneal error: {error}");
+                process::exit(1);
+            }
+        }
+    } else {
+        match phoneal::run(&source) {
+            Ok(lines) => {
+                for line in lines {
+                    println!("{line}");
+                }
+            }
+            Err(error) => {
+                eprintln!("Phoneal error: {error}");
+                process::exit(1);
+            }
+        }
+    }
 }
-#[derive(Clone)]enum Value{Int(i64),Str(String)}
-impl std::fmt::Display for Value{fn fmt(&self,f:&mut std::fmt::Formatter<'_>)->std::fmt::Result{match self{Value::Int(n)=>write!(f,"{n}"),Value::Str(s)=>write!(f,"{s}")}}}
-fn eval(e:&Expr,env:&HashMap<String,Value>)->Result<Value,String>{match e{Expr::Int(n)=>Ok(Value::Int(*n)),Expr::Str(s)=>Ok(Value::Str(s.clone())),Expr::Var(n)=>env.get(n).cloned().ok_or_else(||format!("Undefined variable '{n}'")),Expr::Group(x)=>eval(x,env),Expr::Binary(a,op,b)=>{let(a,b)=(eval(a,env)?,eval(b,env)?);match(a,op,b){(Value::Int(x),Token::Plus,Value::Int(y))=>x.checked_add(y).map(Value::Int).ok_or("Integer overflow".into()),(Value::Int(x),Token::Minus,Value::Int(y))=>x.checked_sub(y).map(Value::Int).ok_or("Integer overflow".into()),(Value::Int(x),Token::Star,Value::Int(y))=>x.checked_mul(y).map(Value::Int).ok_or("Integer overflow".into()),(Value::Int(_),Token::Slash,Value::Int(0))=>Err("Division by zero".into()),(Value::Int(x),Token::Slash,Value::Int(y))=>x.checked_div(y).map(Value::Int).ok_or("Integer overflow".into()),(Value::Str(x),Token::Plus,Value::Str(y))=>Ok(Value::Str(x+&y)),_=>Err("Operator used with incompatible types".into())}}}}
-fn execute(stmts:&[Stmt])->Result<(),String>{let mut env=HashMap::new();for s in stmts{match s{Stmt::Let(n,e)=>{if env.contains_key(n){return Err(format!("Variable '{n}' already declared"))}let v=eval(e,&env)?;env.insert(n.clone(),v);},Stmt::Print(e)=>println!("{}",eval(e,&env)?),}}Ok(())}
-fn main(){let a:Vec<String>=env::args().collect();if a.len()!=3||!matches!(a[1].as_str(),"run"|"check"){eprintln!("Phoneal 0.1.0 — Rust-hosted prototype\nUsage: phnl <run|check> <file.phnl>");process::exit(2)}if !a[2].ends_with(".phnl"){eprintln!("Expected a .phnl file");process::exit(2)}let src=fs::read_to_string(&a[2]).unwrap_or_else(|e|{eprintln!("Cannot read {}: {e}",a[2]);process::exit(1)});let r=Lexer::new(&src).scan().and_then(|t|{let ast=Parser::new(t).parse()?;if a[1]=="run"{execute(&ast)?}else{println!("Syntax OK: {}",a[2])}Ok(())});if let Err(e)=r{eprintln!("Phoneal error: {e}");process::exit(1)}}
-#[cfg(test)]mod tests{use super::*;#[test]fn lexer_recognizes_tokens(){let t=Lexer::new("let x = 42;").scan().unwrap();assert_eq!(t[0].kind,Token::Let);assert_eq!(t[3].kind,Token::Int(42));}#[test]fn parser_respects_precedence(){let t=Lexer::new("let x = 2 + 3 * 4;").scan().unwrap();let ast=Parser::new(t).parse().unwrap();let Stmt::Let(_,e)=&ast[0]else{panic!()};assert_eq!(eval(e,&HashMap::new()).unwrap().to_string(),"14");}#[test]fn division_by_zero_is_error(){let t=Lexer::new("let x = 1 / 0;").scan().unwrap();let ast=Parser::new(t).parse().unwrap();let Stmt::Let(_,e)=&ast[0]else{panic!()};assert!(eval(e,&HashMap::new()).is_err());}}
