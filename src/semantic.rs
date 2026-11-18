@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     ast::{Expression, Statement},
-    diagnostic::Diagnostic,
+    diagnostic::{Diagnostic, DiagnosticStage},
 };
 
 /// Validates declaration and variable-use rules before interpretation.
@@ -14,11 +14,18 @@ pub fn analyze(statements: &[Statement]) -> Result<(), Diagnostic> {
 
     for statement in statements {
         match statement {
-            Statement::Let { name, value } => {
+            Statement::Let {
+                name,
+                name_location,
+                value,
+            } => {
                 if declared.contains(name) {
-                    return Err(Diagnostic::semantic(format!(
-                        "Variable '{name}' is already declared"
-                    )));
+                    return Err(Diagnostic::at(
+                        DiagnosticStage::Semantic,
+                        format!("Variable '{name}' is already declared"),
+                        name_location.line,
+                        name_location.column,
+                    ));
                 }
 
                 validate_expression(value, &declared)?;
@@ -39,11 +46,16 @@ fn validate_expression(
 ) -> Result<(), Diagnostic> {
     match expression {
         Expression::Integer(_) | Expression::String(_) => Ok(()),
-        Expression::Variable(name) => {
+        Expression::Variable { name, location } => {
             if declared.contains(name) {
                 Ok(())
             } else {
-                Err(Diagnostic::semantic(format!("Undefined variable '{name}'")))
+                Err(Diagnostic::at(
+                    DiagnosticStage::Semantic,
+                    format!("Undefined variable '{name}'"),
+                    location.line,
+                    location.column,
+                ))
             }
         }
         Expression::Group(inner) => validate_expression(inner, declared),
@@ -73,25 +85,34 @@ mod tests {
     }
 
     #[test]
-    fn rejects_undefined_variable_in_print() {
+    fn rejects_undefined_variable_in_print_with_exact_location() {
         let error = analyze(&statements("print(missing);")).unwrap_err();
 
         assert_eq!(error.stage, DiagnosticStage::Semantic);
         assert_eq!(error.message, "Undefined variable 'missing'");
+        let location = error.location.unwrap();
+        assert_eq!(location.line, 1);
+        assert_eq!(location.column, 7);
     }
 
     #[test]
-    fn rejects_undefined_variable_in_initializer() {
+    fn rejects_undefined_variable_in_initializer_with_exact_location() {
         let error = analyze(&statements("let result = unknown + 1;")).unwrap_err();
 
         assert_eq!(error.message, "Undefined variable 'unknown'");
+        let location = error.location.unwrap();
+        assert_eq!(location.line, 1);
+        assert_eq!(location.column, 14);
     }
 
     #[test]
-    fn rejects_duplicate_declarations() {
+    fn rejects_duplicate_declarations_at_second_name() {
         let error = analyze(&statements("let value = 1; let value = 2;")).unwrap_err();
 
         assert_eq!(error.message, "Variable 'value' is already declared");
+        let location = error.location.unwrap();
+        assert_eq!(location.line, 1);
+        assert_eq!(location.column, 20);
     }
 
     #[test]
@@ -99,6 +120,7 @@ mod tests {
         let error = analyze(&statements("let value = value + 1;")).unwrap_err();
 
         assert_eq!(error.message, "Undefined variable 'value'");
+        assert_eq!(error.location.unwrap().column, 13);
     }
 
     #[test]
@@ -107,6 +129,7 @@ mod tests {
 
         assert_eq!(error.stage, DiagnosticStage::Semantic);
         assert!(error.message.contains("not_declared"));
+        assert_eq!(error.location.unwrap().column, 7);
     }
 
     #[test]
@@ -114,5 +137,6 @@ mod tests {
         let error = analyze(&statements("print((known + missing));")).unwrap_err();
 
         assert_eq!(error.message, "Undefined variable 'known'");
+        assert_eq!(error.location.unwrap().column, 8);
     }
 }

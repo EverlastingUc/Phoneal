@@ -1,6 +1,6 @@
 use crate::{
     ast::{Expression, Statement},
-    diagnostic::Diagnostic,
+    diagnostic::{Diagnostic, SourceLocation},
     token::{Token, TokenKind},
 };
 
@@ -73,6 +73,10 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<Statement, Diagnostic> {
         if self.take(&TokenKind::Let) {
             let token = self.advance();
+            let name_location = SourceLocation {
+                line: token.line,
+                column: token.column,
+            };
             let name = match token.kind {
                 TokenKind::Identifier(name) => name,
                 _ => {
@@ -88,7 +92,11 @@ impl Parser {
             let value = self.parse_expression()?;
             self.require(&TokenKind::Semicolon, "Expected ';'")?;
 
-            return Ok(Statement::Let { name, value });
+            return Ok(Statement::Let {
+                name,
+                name_location,
+                value,
+            });
         }
 
         if self.take(&TokenKind::Print) {
@@ -174,7 +182,13 @@ impl Parser {
         match token.kind {
             TokenKind::Integer(value) => Ok(Expression::Integer(value)),
             TokenKind::String(value) => Ok(Expression::String(value)),
-            TokenKind::Identifier(name) => Ok(Expression::Variable(name)),
+            TokenKind::Identifier(name) => Ok(Expression::Variable {
+                name,
+                location: SourceLocation {
+                    line: token.line,
+                    column: token.column,
+                },
+            }),
             TokenKind::LeftParen => {
                 let expression = self.parse_expression()?;
                 self.require(&TokenKind::RightParen, "Expected ')'")?;
@@ -239,5 +253,23 @@ mod tests {
             .unwrap_err();
 
         assert!(error.to_string().contains("at 1:5"));
+    }
+
+    #[test]
+    fn preserves_identifier_source_locations() {
+        let statements = Parser::new(Lexer::new("let result = value;").scan().unwrap())
+            .parse()
+            .unwrap();
+        let Statement::Let { name_location, value, .. } = &statements[0] else {
+            panic!("expected let statement");
+        };
+
+        assert_eq!(name_location.line, 1);
+        assert_eq!(name_location.column, 5);
+        let Expression::Variable { location, .. } = value else {
+            panic!("expected variable expression");
+        };
+        assert_eq!(location.line, 1);
+        assert_eq!(location.column, 14);
     }
 }

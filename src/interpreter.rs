@@ -27,7 +27,7 @@ pub fn evaluate(
     match expression {
         Expression::Integer(value) => Ok(Value::Integer(*value)),
         Expression::String(value) => Ok(Value::String(value.clone())),
-        Expression::Variable(name) => environment
+        Expression::Variable { name, .. } => environment
             .get(name)
             .cloned()
             .ok_or_else(|| format!("Undefined variable '{name}'")),
@@ -75,7 +75,7 @@ pub fn execute(statements: &[Statement]) -> Result<Vec<String>, String> {
 
     for statement in statements {
         match statement {
-            Statement::Let { name, value } => {
+            Statement::Let { name, value, .. } => {
                 if environment.contains_key(name) {
                     return Err(format!("Variable '{name}' already declared"));
                 }

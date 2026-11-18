@@ -1,10 +1,16 @@
-use crate::token::TokenKind;
+use crate::{
+    diagnostic::SourceLocation,
+    token::TokenKind,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Integer(i64),
     String(String),
-    Variable(String),
+    Variable {
+        name: String,
+        location: SourceLocation,
+    },
     Binary {
         left: Box<Expression>,
         operator: TokenKind,
@@ -15,6 +21,10 @@ pub enum Expression {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    Let { name: String, value: Expression },
+    Let {
+        name: String,
+        name_location: SourceLocation,
+        value: Expression,
+    },
     Print(Expression),
 }
