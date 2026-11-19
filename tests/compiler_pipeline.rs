@@ -8,7 +8,7 @@ fn runs_a_complete_integer_program() {
 
 #[test]
 fn runs_string_concatenation_program() {
-    let output = run("let greeting = \"Hello, \" + \"Phoneal\"; print(greeting);").unwrap();
+    let output = run("create greeting = \"Hello, \" + \"Phoneal\"; print(greeting);").unwrap();
     assert_eq!(output, ["Hello, Phoneal"]);
 }
 
@@ -28,7 +28,7 @@ fn valid_programs_are_accepted_by_check_pipeline() {
 #[test]
 fn lexical_shadowing_runs_end_to_end() {
     let output =
-        run("let color = \"blue\"; { let color = \"red\"; print(color); } print(color);").unwrap();
+        run("create color = \"blue\"; { let color = \"red\"; print(color); } print(color);").unwrap();
     assert_eq!(output, ["red", "blue"]);
 }
 
@@ -211,13 +211,13 @@ fn typed_functions_accept_matching_arguments_and_returns() {
 
 #[test]
 fn typed_string_functions_execute() {
-    assert_eq!(run("fn greet(name: string) -> string { return \"Hello, \" + name; } print(greet(\"Phoneal\"));").unwrap(), ["Hello, Phoneal"]);
+    assert_eq!(run("function greet(name: text) returns string { return \"Hello, \" + name; } print(greet(\"Phoneal\"));").unwrap(), ["Hello, Phoneal"]);
 }
 
 #[test]
 fn compiler_rejects_wrong_function_argument_type() {
     let errors = compile_with_diagnostics(
-        "fn identity(value: integer) -> integer { return value; } print(identity(\"bad\"));",
+        "function identity(value: integer) returns integer { return value; } print(identity(\"bad\"));",
     )
     .unwrap_err();
     assert!(errors
@@ -228,7 +228,7 @@ fn compiler_rejects_wrong_function_argument_type() {
 #[test]
 fn compiler_rejects_wrong_function_return_type() {
     let errors =
-        compile_with_diagnostics("fn invalid() -> integer { return \"bad\"; }").unwrap_err();
+        compile_with_diagnostics("function invalid() returns integer { return \"bad\"; }").unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("Return type mismatch")));
