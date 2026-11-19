@@ -8,7 +8,7 @@ Phoneal is an experimental security-first, general-purpose programming language.
 
 ## Current state
 
-The Rust-hosted prototype has a hand-written lexer, recursive-descent parser, arithmetic expressions, let declarations, and print statements. Compilation includes semantic analysis that rejects duplicate declarations and undefined variables before interpretation. Identifier references and declaration names retain their source line and column, so semantic diagnostics can point to the exact identifier.
+The Rust-hosted prototype has a hand-written lexer, recursive-descent parser, arithmetic expressions, let declarations, and print statements. Compilation includes semantic analysis that rejects duplicate declarations and undefined variables before interpretation. Identifier references, declaration names, and binary operators retain source locations. Semantic and runtime diagnostics can identify the relevant source position.
 
 The language currently has one program-wide variable scope. This is not yet a bytecode compiler, sandbox, or production-ready secure language.
 
@@ -24,7 +24,7 @@ The language currently has one program-wide variable scope. This is not yet a by
 
 ## Roadmap
 
-1. Expand source spans to all AST nodes and improve runtime diagnostics.
+1. Preserve full source spans and improve multi-error diagnostics.
 2. Add functions, scopes, and static type checking.
 3. Define a typed intermediate representation.
 4. Implement bytecode generation and verification.

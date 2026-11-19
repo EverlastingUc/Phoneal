@@ -124,20 +124,24 @@ impl Parser {
         let mut expression = self.parse_multiplication()?;
 
         loop {
-            let operator = if self.take(&TokenKind::Plus) {
-                Some(TokenKind::Plus)
-            } else if self.take(&TokenKind::Minus) {
-                Some(TokenKind::Minus)
-            } else {
-                None
+            let next_kind = self.peek().kind.clone();
+            let operator_token = match next_kind {
+                TokenKind::Plus | TokenKind::Minus => Some(self.advance()),
+                _ => None,
             };
 
-            match operator {
-                Some(operator) => {
+            match operator_token {
+                Some(token) => {
+                    let operator = token.kind;
+                    let operator_location = SourceLocation {
+                        line: token.line,
+                        column: token.column,
+                    };
                     let right = self.parse_multiplication()?;
                     expression = Expression::Binary {
                         left: Box::new(expression),
                         operator,
+                        operator_location,
                         right: Box::new(right),
                     };
                 }
@@ -152,20 +156,24 @@ impl Parser {
         let mut expression = self.parse_primary()?;
 
         loop {
-            let operator = if self.take(&TokenKind::Star) {
-                Some(TokenKind::Star)
-            } else if self.take(&TokenKind::Slash) {
-                Some(TokenKind::Slash)
-            } else {
-                None
+            let next_kind = self.peek().kind.clone();
+            let operator_token = match next_kind {
+                TokenKind::Star | TokenKind::Slash => Some(self.advance()),
+                _ => None,
             };
 
-            match operator {
-                Some(operator) => {
+            match operator_token {
+                Some(token) => {
+                    let operator = token.kind;
+                    let operator_location = SourceLocation {
+                        line: token.line,
+                        column: token.column,
+                    };
                     let right = self.parse_primary()?;
                     expression = Expression::Binary {
                         left: Box::new(expression),
                         operator,
+                        operator_location,
                         right: Box::new(right),
                     };
                 }
@@ -276,5 +284,25 @@ mod tests {
         };
         assert_eq!(location.line, 1);
         assert_eq!(location.column, 14);
+    }
+    
+    #[test]
+    fn preserves_binary_operator_source_location() {
+        let statements = Parser::new(Lexer::new("let result = value / 2;").scan().unwrap())
+            .parse()
+            .unwrap();
+        let Statement::Let { value, .. } = &statements[0] else {
+            panic!("expected let statement");
+        };
+        let Expression::Binary {
+            operator_location,
+            ..
+        } = value
+        else {
+            panic!("expected binary expression");
+        };
+
+        assert_eq!(operator_location.line, 1);
+        assert_eq!(operator_location.column, 20);
     }
 }

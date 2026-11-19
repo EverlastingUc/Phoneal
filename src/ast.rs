@@ -11,6 +11,7 @@ pub enum Expression {
     Binary {
         left: Box<Expression>,
         operator: TokenKind,
+        operator_location: SourceLocation,
         right: Box<Expression>,
     },
     Group(Box<Expression>),

@@ -22,5 +22,5 @@ pub fn compile(source: &str) -> Result<Vec<Statement>, Diagnostic> {
 
 pub fn run(source: &str) -> Result<Vec<String>, Diagnostic> {
     let statements = compile(source)?;
-    execute(&statements).map_err(Diagnostic::runtime)
+    execute(&statements)
 }
