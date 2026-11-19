@@ -1,0 +1,4 @@
+let first = "Phone";
+let second = "al";
+let language = first + second;
+print(language);
