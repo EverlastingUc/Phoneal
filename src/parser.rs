@@ -427,14 +427,22 @@ mod tests {
     }
     #[test]
     fn rejects_excessively_nested_parentheses_without_panicking() {
-        let source = format!("{}1{};", "(".repeat(MAX_NESTING_DEPTH + 10), ")".repeat(MAX_NESTING_DEPTH + 10));
+        let source = format!(
+            "{}1{};",
+            "(".repeat(MAX_NESTING_DEPTH + 10),
+            ")".repeat(MAX_NESTING_DEPTH + 10)
+        );
         let tokens = Lexer::new(&source).scan().unwrap();
         let error = Parser::new(tokens).parse().unwrap_err();
         assert!(error.message.contains("nesting depth"));
     }
     #[test]
     fn rejects_excessively_nested_blocks_without_panicking() {
-        let source = format!("{}print(1);{}", "{".repeat(MAX_NESTING_DEPTH + 10), "}".repeat(MAX_NESTING_DEPTH + 10));
+        let source = format!(
+            "{}print(1);{}",
+            "{".repeat(MAX_NESTING_DEPTH + 10),
+            "}".repeat(MAX_NESTING_DEPTH + 10)
+        );
         let tokens = Lexer::new(&source).scan().unwrap();
         let error = Parser::new(tokens).parse().unwrap_err();
         assert!(error.message.contains("nesting depth"));
