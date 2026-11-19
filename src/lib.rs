@@ -15,10 +15,19 @@ use parser::Parser;
 use semantic::analyze_all;
 
 pub fn compile_with_diagnostics(source: &str) -> Result<Vec<Statement>, Vec<Diagnostic>> {
-    let tokens = Lexer::new(source).scan().map_err(|diagnostic| vec![diagnostic])?;
-    let statements = Parser::new(tokens).parse().map_err(|diagnostic| vec![diagnostic])?;
+    let tokens = Lexer::new(source)
+        .scan()
+        .map_err(|diagnostic| vec![diagnostic])?;
+    let statements = Parser::new(tokens)
+        .parse()
+        .map_err(|diagnostic| vec![diagnostic])?;
     let diagnostics = analyze_all(&statements).into_vec();
-    if diagnostics.is_empty() { Ok(statements) } else { Err(diagnostics) }
+
+    if diagnostics.is_empty() {
+        Ok(statements)
+    } else {
+        Err(diagnostics)
+    }
 }
 
 /// Compiles source and returns the first diagnostic for compatibility.
