@@ -4,9 +4,13 @@ use crate::{
     token::{Token, TokenKind},
     types::PhonealType,
 };
+/// Maximum recursive grammar nesting accepted before returning a diagnostic.
+pub const MAX_NESTING_DEPTH: usize = 256;
+
 pub struct Parser {
     tokens: Vec<Token>,
     position: usize,
+    nesting_depth: usize,
 }
 impl Parser {
     pub fn new(mut tokens: Vec<Token>) -> Self {
@@ -20,6 +24,7 @@ impl Parser {
         Self {
             tokens,
             position: 0,
+            nesting_depth: 0,
         }
     }
     fn peek(&self) -> &Token {
@@ -225,6 +230,20 @@ impl Parser {
         })
     }
     fn parse_block_contents(&mut self) -> Result<Vec<Statement>, Diagnostic> {
+        if self.nesting_depth >= MAX_NESTING_DEPTH {
+            let t = self.peek();
+            return Err(Diagnostic::parsing(
+                format!("Maximum parser nesting depth ({MAX_NESTING_DEPTH}) exceeded"),
+                t.line,
+                t.column,
+            ));
+        }
+        self.nesting_depth += 1;
+        let result = self.parse_block_contents_inner();
+        self.nesting_depth -= 1;
+        result
+    }
+    fn parse_block_contents_inner(&mut self) -> Result<Vec<Statement>, Diagnostic> {
         let mut out = Vec::new();
         while !matches!(self.peek().kind, TokenKind::RightBrace | TokenKind::Eof) {
             out.push(self.parse_statement()?);
@@ -254,6 +273,20 @@ impl Parser {
         Ok(e)
     }
     fn parse_expression(&mut self) -> Result<Expression, Diagnostic> {
+        if self.nesting_depth >= MAX_NESTING_DEPTH {
+            let t = self.peek();
+            return Err(Diagnostic::parsing(
+                format!("Maximum parser nesting depth ({MAX_NESTING_DEPTH}) exceeded"),
+                t.line,
+                t.column,
+            ));
+        }
+        self.nesting_depth += 1;
+        let result = self.parse_expression_inner();
+        self.nesting_depth -= 1;
+        result
+    }
+    fn parse_expression_inner(&mut self) -> Result<Expression, Diagnostic> {
         self.parse_or()
     }
     fn parse_or(&mut self) -> Result<Expression, Diagnostic> {
@@ -292,6 +325,20 @@ impl Parser {
         )
     }
     fn parse_unary(&mut self) -> Result<Expression, Diagnostic> {
+        if self.nesting_depth >= MAX_NESTING_DEPTH {
+            let t = self.peek();
+            return Err(Diagnostic::parsing(
+                format!("Maximum parser nesting depth ({MAX_NESTING_DEPTH}) exceeded"),
+                t.line,
+                t.column,
+            ));
+        }
+        self.nesting_depth += 1;
+        let result = self.parse_unary_inner();
+        self.nesting_depth -= 1;
+        result
+    }
+    fn parse_unary_inner(&mut self) -> Result<Expression, Diagnostic> {
         if matches!(self.peek().kind, TokenKind::Not | TokenKind::Minus) {
             let t = self.advance();
             let operator_location = Self::loc(&t);
@@ -377,6 +424,20 @@ mod tests {
         .parse()
         .unwrap();
         assert!(matches!(p[0], Statement::Block { .. }));
+    }
+    #[test]
+    fn rejects_excessively_nested_parentheses_without_panicking() {
+        let source = format!("{}1{};", "(".repeat(MAX_NESTING_DEPTH + 10), ")".repeat(MAX_NESTING_DEPTH + 10));
+        let tokens = Lexer::new(&source).scan().unwrap();
+        let error = Parser::new(tokens).parse().unwrap_err();
+        assert!(error.message.contains("nesting depth"));
+    }
+    #[test]
+    fn rejects_excessively_nested_blocks_without_panicking() {
+        let source = format!("{}print(1);{}", "{".repeat(MAX_NESTING_DEPTH + 10), "}".repeat(MAX_NESTING_DEPTH + 10));
+        let tokens = Lexer::new(&source).scan().unwrap();
+        let error = Parser::new(tokens).parse().unwrap_err();
+        assert!(error.message.contains("nesting depth"));
     }
     #[test]
     fn rejects_unclosed_block() {

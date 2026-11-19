@@ -2,7 +2,9 @@
 
 Phoneal is an experimental prototype and is not production-ready. Do not use the current interpreter to execute untrusted programs.
 
-The current implementation provides static type checking, lexical scopes, checked integer arithmetic, source diagnostics, and a bounded function-call depth. These are correctness and limited robustness measures, not a security boundary.
+The current implementation provides static type checking, lexical scopes, checked integer arithmetic, source diagnostics, a bounded function-call depth, and front-end limits on source size, token count, and parser nesting. These are correctness and limited robustness measures, not a security boundary.
+
+These front-end limits reduce some accidental or hostile-input exhaustion risks, but do not bound execution time, total interpreter steps, heap growth, or output size. They are not a security boundary.
 
 There is currently no bytecode verifier, virtual machine, capability enforcement, filesystem/network isolation, process isolation, memory quota, instruction budget, or wall-clock execution limit. The current interpreter must be treated as trusted-code-only.
 

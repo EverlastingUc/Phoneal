@@ -2,11 +2,17 @@ use crate::{
     diagnostic::Diagnostic,
     token::{Token, TokenKind},
 };
+
+/// Maximum UTF-8 source size accepted by the prototype lexer.
+pub const MAX_SOURCE_BYTES: usize = 1_048_576;
+/// Maximum number of non-EOF tokens accepted from one source file.
+pub const MAX_TOKENS: usize = 100_000;
 pub struct Lexer {
     characters: Vec<char>,
     position: usize,
     line: usize,
     column: usize,
+    source_too_large: bool,
 }
 impl Lexer {
     pub fn new(source: &str) -> Self {
@@ -15,6 +21,7 @@ impl Lexer {
             position: 0,
             line: 1,
             column: 1,
+            source_too_large: source.len() > MAX_SOURCE_BYTES,
         }
     }
     fn peek(&self) -> Option<char> {
@@ -35,6 +42,13 @@ impl Lexer {
         c
     }
     pub fn scan(mut self) -> Result<Vec<Token>, Diagnostic> {
+        if self.source_too_large {
+            return Err(Diagnostic::lexical(
+                format!("Source exceeds the {} byte limit", MAX_SOURCE_BYTES),
+                1,
+                1,
+            ));
+        }
         let mut tokens = Vec::new();
         while let Some(current) = self.peek() {
             let (line, column) = (self.line, self.column);
@@ -205,6 +219,13 @@ impl Lexer {
                     ))
                 }
             };
+            if tokens.len() >= MAX_TOKENS {
+                return Err(Diagnostic::lexical(
+                    format!("Source exceeds the {MAX_TOKENS} token limit"),
+                    line,
+                    column,
+                ));
+            }
             tokens.push(Token::new(kind, line, column));
         }
         tokens.push(Token::new(TokenKind::Eof, self.line, self.column));
@@ -242,6 +263,18 @@ mod tests {
     fn rejects_unterminated_strings_with_location() {
         let e = Lexer::new("print(\n  \"unfinished);").scan().unwrap_err();
         assert_eq!(e.location.unwrap().line, 2);
+    }
+    #[test]
+    fn rejects_source_larger_than_configured_limit() {
+        let source = " ".repeat(MAX_SOURCE_BYTES + 1);
+        let error = Lexer::new(&source).scan().unwrap_err();
+        assert!(error.message.contains("byte limit"));
+    }
+    #[test]
+    fn rejects_token_floods() {
+        let source = "print(1);".repeat(MAX_TOKENS / 4 + 1);
+        let error = Lexer::new(&source).scan().unwrap_err();
+        assert!(error.message.contains("token limit"));
     }
     #[test]
     fn rejects_integer_literals_outside_i64_range() {

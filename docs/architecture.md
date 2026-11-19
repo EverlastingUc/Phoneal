@@ -8,6 +8,8 @@ Phoneal currently uses a Rust-hosted compile-and-interpret pipeline:
     -> Recursive-descent Parser (AST, precedence, functions, branches)
     -> Semantic Analysis (scopes, primitive types, signatures, branch return paths)
     -> Interpreter (checked arithmetic, short-circuit logic, function frames)
+
+Front-end admission limits: 1 MiB source, 100,000 tokens, and 256 nested grammar levels.
 ```
 
 ## Current invariants
@@ -23,6 +25,7 @@ Phoneal currently uses a Rust-hosted compile-and-interpret pipeline:
 - A non-unit function is accepted only when every reachable branch returns a value.
 - Integer arithmetic uses checked operations.
 - Active function calls are limited to 128.
+- Source files, token streams, and recursive grammar nesting have explicit admission limits to avoid unbounded front-end growth.
 
 ## Not yet a security boundary
 

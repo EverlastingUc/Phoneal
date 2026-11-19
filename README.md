@@ -17,6 +17,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Function calls, recursion, and control-flow-aware return checking
 - Source-located lexer, parser, semantic, and runtime diagnostics
 - Comments and escaped string literals
+- Front-end input limits: 1 MiB source, 100,000 tokens, and 256 nested grammar levels
 
 ```phoneal
 function factorial(number: integer) returns integer {
