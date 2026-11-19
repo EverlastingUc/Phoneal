@@ -28,7 +28,8 @@ fn valid_programs_are_accepted_by_check_pipeline() {
 #[test]
 fn lexical_shadowing_runs_end_to_end() {
     let output =
-        run("create color = \"blue\"; { let color = \"red\"; print(color); } print(color);").unwrap();
+        run("create color = \"blue\"; { let color = \"red\"; print(color); } print(color);")
+            .unwrap();
     assert_eq!(output, ["red", "blue"]);
 }
 
@@ -227,8 +228,8 @@ fn compiler_rejects_wrong_function_argument_type() {
 
 #[test]
 fn compiler_rejects_wrong_function_return_type() {
-    let errors =
-        compile_with_diagnostics("function invalid() returns integer { return \"bad\"; }").unwrap_err();
+    let errors = compile_with_diagnostics("function invalid() returns integer { return \"bad\"; }")
+        .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("Return type mismatch")));
