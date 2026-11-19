@@ -137,6 +137,7 @@ impl Parser {
         if !self.take(&TokenKind::RightParen) {
             loop {
                 let t = self.advance();
+                let parameter_location = Self::loc(&t);
                 let p = match t.kind {
                     TokenKind::Identifier(n) => n,
                     _ => {
@@ -149,7 +150,7 @@ impl Parser {
                 };
                 self.require(&TokenKind::Colon, "Expected ':' after parameter name")?;
                 let ty = self.parse_type()?;
-                parameters.push((p, ty, Self::loc(&t)));
+                parameters.push((p, ty, parameter_location));
                 if self.take(&TokenKind::RightParen) {
                     break;
                 }
@@ -293,10 +294,12 @@ impl Parser {
     fn parse_unary(&mut self) -> Result<Expression, Diagnostic> {
         if matches!(self.peek().kind, TokenKind::Not | TokenKind::Minus) {
             let t = self.advance();
+            let operator_location = Self::loc(&t);
+            let operator = t.kind;
             let operand = self.parse_unary()?;
             return Ok(Expression::Unary {
-                operator: t.kind,
-                operator_location: Self::loc(&t),
+                operator,
+                operator_location,
                 operand: Box::new(operand),
             });
         }
@@ -304,13 +307,14 @@ impl Parser {
     }
     fn parse_primary(&mut self) -> Result<Expression, Diagnostic> {
         let t = self.advance();
+        let token_location = Self::loc(&t);
         match t.kind {
             TokenKind::Integer(v) => Ok(Expression::Integer(v)),
             TokenKind::String(v) => Ok(Expression::String(v)),
             TokenKind::True => Ok(Expression::Boolean(true)),
             TokenKind::False => Ok(Expression::Boolean(false)),
             TokenKind::Identifier(name) => {
-                let loc = Self::loc(&t);
+                let loc = token_location;
                 if self.take(&TokenKind::LeftParen) {
                     let mut args = Vec::new();
                     if !self.take(&TokenKind::RightParen) {

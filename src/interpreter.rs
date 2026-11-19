@@ -129,17 +129,17 @@ fn evaluate_expression(
                 return Ok(Value::Boolean(true));
             }
             let r = evaluate_expression(right, env, funcs, out, depth)?;
-            if *operator == TokenKind::And {
-                if let (Value::Boolean(a), Value::Boolean(b)) = (l, r) {
-                    return Ok(Value::Boolean(a && b));
-                }
+            match operator {
+                TokenKind::And => match (l, r) {
+                    (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a && b)),
+                    _ => Err(runtime_error("Logical operator requires boolean operands", operator_location)),
+                },
+                TokenKind::Or => match (l, r) {
+                    (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a || b)),
+                    _ => Err(runtime_error("Logical operator requires boolean operands", operator_location)),
+                },
+                _ => apply_binary(l, operator, r, operator_location),
             }
-            if *operator == TokenKind::Or {
-                if let (Value::Boolean(a), Value::Boolean(b)) = (l, r) {
-                    return Ok(Value::Boolean(a || b));
-                }
-            }
-            apply_binary(l, operator, r, operator_location)
         }
         Expression::Call {
             name,
