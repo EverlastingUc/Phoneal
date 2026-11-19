@@ -31,6 +31,7 @@ pub enum Statement {
     Let {
         name: String,
         name_location: SourceLocation,
+        declared_type: Option<PhonealType>,
         value: Expression,
     },
     Print(Expression),

@@ -225,6 +225,7 @@ fn execute_statements(
                 name,
                 name_location,
                 value,
+                ..
             } => {
                 if env.last().unwrap().contains_key(name) {
                     return Err(runtime_error(

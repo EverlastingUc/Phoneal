@@ -71,6 +71,11 @@ A semicolon ends a simple statement. Braced blocks do not need a semicolon after
 create answer = 42;
 create greeting = "Hello";
 create is_ready = true;
+
+# Optional explicit type annotations
+create age: integer = 18;
+create name: text = "Ever";
+create enabled: boolean = true;
 ```
 
 ### 3.2 Mutable variables
@@ -416,7 +421,7 @@ The Rust prototype rejects source files larger than **1 MiB**, more than **100,0
 
 The current Rust prototype implements the following subset of this specification:
 
-- Implemented: `create`, `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits, call-depth limit, and per-run statement budget.
+- Implemented: `create` (with optional `: integer`, `: text`, or `: boolean` annotations), `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits, call-depth limit, and per-run statement budget.
 - Not yet implemented: mutable assignment, loops, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
 - Explicitly deferred by project owner: Package Manager, Standard Library, and self-hosting compiler.
 

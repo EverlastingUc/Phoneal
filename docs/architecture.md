@@ -16,6 +16,7 @@ Front-end admission limits: 1 MiB source, 100,000 tokens, and 256 nested grammar
 
 - Parsing completes before semantic analysis and execution.
 - Same-scope redeclaration is rejected; nested shadowing is permitted.
+- Variable types may be inferred from initializers or explicitly annotated; mismatched initializers are rejected before execution.
 - Declaration initializers are evaluated before inserting the new binding.
 - Function calls use a fresh parameter scope and do not inherit caller-local variables.
 - Function signatures are collected before body analysis, allowing forward references and recursion.

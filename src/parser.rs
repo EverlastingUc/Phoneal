@@ -83,7 +83,8 @@ impl Parser {
                     ))
                 }
             };
-            self.require(&TokenKind::Equal, "Expected '=' after variable name")?;
+            let declared_type = if self.take(&TokenKind::Colon) { Some(self.parse_type()?) } else { None };
+            self.require(&TokenKind::Equal, "Expected '=' after variable name or type")?;
             let value = self.parse_expression()?;
             self.require(
                 &TokenKind::Semicolon,
@@ -92,6 +93,7 @@ impl Parser {
             return Ok(Statement::Let {
                 name,
                 name_location: loc,
+                declared_type,
                 value,
             });
         }
@@ -404,6 +406,11 @@ mod tests {
         let s="function add(a: integer, b: integer) returns integer { return a + b; } create result = add(20,22);";
         let p = Parser::new(Lexer::new(s).scan().unwrap()).parse().unwrap();
         assert!(matches!(p[0], Statement::Function { .. }));
+    }
+    #[test]
+    fn parses_explicit_variable_type() {
+        let parsed = Parser::new(Lexer::new("create age: integer = 18;").scan().unwrap()).parse().unwrap();
+        assert!(matches!(&parsed[0], Statement::Let { declared_type: Some(PhonealType::Integer), .. }));
     }
     #[test]
     fn parses_if_else_and_logical_precedence() {

@@ -67,6 +67,7 @@ impl Analyzer {
                 Statement::Let {
                     name,
                     name_location,
+                    declared_type,
                     value,
                 } => {
                     let dup = self.scopes.last().unwrap().contains_key(name);
@@ -76,7 +77,13 @@ impl Analyzer {
                             name_location,
                         );
                     }
-                    let ty = self.infer_expression(value);
+                    let inferred = self.infer_expression(value);
+                    if let (Some(expected), Some(actual)) = (declared_type, inferred) {
+                        if *expected != actual {
+                            self.report(format!("Variable '{name}' is declared as {expected}, but its value has type {actual}"), name_location);
+                        }
+                    }
+                    let ty = declared_type.map(Some).unwrap_or(inferred);
                     if !dup {
                         self.scopes.last_mut().unwrap().insert(name.clone(), ty);
                     }
@@ -347,6 +354,14 @@ mod tests {
     use crate::{lexer::Lexer, parser::Parser};
     fn parse(s: &str) -> Vec<Statement> {
         Parser::new(Lexer::new(s).scan().unwrap()).parse().unwrap()
+    }
+    #[test]
+    fn accepts_matching_explicit_variable_type() {
+        assert!(analyze(&parse("create age: integer = 18; create name: text = \"Ever\"; create ready: boolean = true;" )).is_ok());
+    }
+    #[test]
+    fn rejects_mismatched_explicit_variable_type() {
+        assert!(analyze_all(&parse("create age: integer = \"eighteen\";" )).iter().any(|d| d.message.contains("declared as integer")));
     }
     #[test]
     fn accepts_boolean_condition_and_comparison() {

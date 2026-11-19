@@ -4,7 +4,8 @@ The canonical syntax reference is [Syntax.md](Syntax.md).
 
 ## Implemented by the current Rust prototype
 
-- English declarations: `create name = expression;`
+- English declarations with inference or explicit annotations: `create name = expression;` and `create age: integer = 18;`
+- Explicit annotation compatibility is checked during semantic analysis.
 - Typed functions: `function name(value: integer) returns integer { ... }`
 - Primitive types: `integer`, `text`, `boolean`
 - Integer, text, and boolean literals
