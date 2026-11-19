@@ -20,16 +20,23 @@ pub fn analyze_all(statements: &[Statement]) -> DiagnosticSet {
 
     for statement in statements {
         match statement {
-            Statement::Let { name, name_location, value } => {
-                let inferred = infer_expression(value, &symbols, &mut diagnostics);
-                if symbols.contains_key(name) {
+            Statement::Let {
+                name,
+                name_location,
+                value,
+            } => {
+                let already_declared = symbols.contains_key(name);
+                if already_declared {
                     diagnostics.push(Diagnostic::at(
                         DiagnosticStage::Semantic,
                         format!("Variable '{name}' is already declared"),
                         name_location.line,
                         name_location.column,
                     ));
-                } else {
+                }
+
+                let inferred = infer_expression(value, &symbols, &mut diagnostics);
+                if !already_declared {
                     symbols.insert(name.clone(), inferred);
                 }
             }
@@ -49,10 +56,22 @@ pub struct DiagnosticSet {
 }
 
 impl DiagnosticSet {
-    pub fn is_empty(&self) -> bool { self.diagnostics.is_empty() }
-    pub fn len(&self) -> usize { self.diagnostics.len() }
-    pub fn iter(&self) -> impl Iterator<Item = &Diagnostic> { self.diagnostics.iter() }
-    pub fn into_vec(self) -> Vec<Diagnostic> { self.diagnostics }
+    pub fn is_empty(&self) -> bool {
+        self.diagnostics.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.diagnostics.len()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Diagnostic> {
+        self.diagnostics.iter()
+    }
+
+    pub fn into_vec(self) -> Vec<Diagnostic> {
+        self.diagnostics
+    }
+
     pub fn into_result(self) -> Result<(), Diagnostic> {
         match self.diagnostics.into_iter().next() {
             Some(diagnostic) => Err(diagnostic),
@@ -82,7 +101,12 @@ fn infer_expression(
             }
         },
         Expression::Group(inner) => infer_expression(inner, symbols, diagnostics),
-        Expression::Binary { left, operator, operator_location, right } => {
+        Expression::Binary {
+            left,
+            operator,
+            operator_location,
+            right,
+        } => {
             let left_type = infer_expression(left, symbols, diagnostics);
             let right_type = infer_expression(right, symbols, diagnostics);
             let (Some(left_type), Some(right_type)) = (left_type, right_type) else {
@@ -90,9 +114,17 @@ fn infer_expression(
             };
 
             let result = match (operator, left_type, right_type) {
-                (TokenKind::Plus, PhonealType::Integer, PhonealType::Integer) => Some(PhonealType::Integer),
-                (TokenKind::Plus, PhonealType::String, PhonealType::String) => Some(PhonealType::String),
-                (TokenKind::Minus | TokenKind::Star | TokenKind::Slash, PhonealType::Integer, PhonealType::Integer) => Some(PhonealType::Integer),
+                (TokenKind::Plus, PhonealType::Integer, PhonealType::Integer) => {
+                    Some(PhonealType::Integer)
+                }
+                (TokenKind::Plus, PhonealType::String, PhonealType::String) => {
+                    Some(PhonealType::String)
+                }
+                (
+                    TokenKind::Minus | TokenKind::Star | TokenKind::Slash,
+                    PhonealType::Integer,
+                    PhonealType::Integer,
+                ) => Some(PhonealType::Integer),
                 _ => None,
             };
 
@@ -106,7 +138,9 @@ fn infer_expression(
                 };
                 diagnostics.push(Diagnostic::at(
                     DiagnosticStage::Semantic,
-                    format!("Operator '{symbol}' cannot be applied to {left_type} and {right_type}"),
+                    format!(
+                        "Operator '{symbol}' cannot be applied to {left_type} and {right_type}"
+                    ),
                     operator_location.line,
                     operator_location.column,
                 ));
@@ -119,15 +153,22 @@ fn infer_expression(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{compile, lexer::Lexer, parser::Parser, diagnostic::DiagnosticStage};
+    use crate::{
+        compile, diagnostic::DiagnosticStage, lexer::Lexer, parser::Parser,
+    };
 
     fn statements(source: &str) -> Vec<Statement> {
-        Parser::new(Lexer::new(source).scan().unwrap()).parse().unwrap()
+        Parser::new(Lexer::new(source).scan().unwrap())
+            .parse()
+            .unwrap()
     }
 
     #[test]
     fn accepts_integer_and_string_expressions() {
-        assert!(analyze(&statements("let n = 2 + 3 * 4; let s = \"a\" + \"b\"; print(n); print(s);")).is_ok());
+        assert!(analyze(&statements(
+            "let n = 2 + 3 * 4; let s = \"a\" + \"b\"; print(n); print(s);"
+        ))
+        .is_ok());
     }
 
     #[test]
@@ -154,24 +195,45 @@ mod tests {
 
     #[test]
     fn reports_multiple_independent_semantic_errors() {
-        let result = analyze_all(&statements("print(first); let value = missing + other; print(last);"));
+        let result = analyze_all(&statements(
+            "print(first); let value = missing + other; print(last);",
+        ));
         assert_eq!(result.len(), 4);
         let messages: Vec<_> = result.iter().map(|item| item.message.as_str()).collect();
-        assert_eq!(messages, ["Undefined variable 'first'", "Undefined variable 'missing'", "Undefined variable 'other'", "Undefined variable 'last'"]);
+        assert_eq!(
+            messages,
+            [
+                "Undefined variable 'first'",
+                "Undefined variable 'missing'",
+                "Undefined variable 'other'",
+                "Undefined variable 'last'",
+            ]
+        );
     }
 
     #[test]
     fn duplicate_initializer_is_still_checked_without_replacing_original() {
-        let result = analyze_all(&statements("let value = 1; let value = missing; print(value);"));
+        let result = analyze_all(&statements(
+            "let value = 1; let value = missing; print(value);",
+        ));
         assert_eq!(result.len(), 2);
-        assert_eq!(result.iter().next().unwrap().message, "Undefined variable 'missing'");
-        assert_eq!(result.iter().nth(1).unwrap().message, "Variable 'value' is already declared");
+        assert_eq!(
+            result.iter().next().unwrap().message,
+            "Variable 'value' is already declared"
+        );
+        assert_eq!(
+            result.iter().nth(1).unwrap().message,
+            "Undefined variable 'missing'"
+        );
     }
 
     #[test]
     fn rejects_mixed_type_addition() {
         let error = analyze(&statements("let result = 1 + \"two\";")).unwrap_err();
-        assert_eq!(error.message, "Operator '+' cannot be applied to integer and string");
+        assert_eq!(
+            error.message,
+            "Operator '+' cannot be applied to integer and string"
+        );
         assert_eq!(error.location.unwrap().column, 18);
     }
 
@@ -183,7 +245,10 @@ mod tests {
 
     #[test]
     fn propagates_inferred_variable_types() {
-        assert!(analyze(&statements("let text = \"safe\"; let result = text + \" code\";")).is_ok());
+        assert!(analyze(&statements(
+            "let text = \"safe\"; let result = text + \" code\";"
+        ))
+        .is_ok());
         assert!(analyze(&statements("let text = \"safe\"; let result = text * 2;")).is_err());
     }
 

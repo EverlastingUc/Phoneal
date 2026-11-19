@@ -39,7 +39,11 @@ fn main() {
         }
     } else {
         match phoneal::run(&source) {
-            Ok(lines) => for line in lines { println!("{line}"); },
+            Ok(lines) => {
+                for line in lines {
+                    println!("{line}");
+                }
+            }
             Err(error) => {
                 eprintln!("Phoneal: {}", error.render(&source));
                 process::exit(1);

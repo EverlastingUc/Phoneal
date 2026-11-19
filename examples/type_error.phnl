@@ -1,3 +1,2 @@
-// This example is intentionally invalid and demonstrates static type checking.
 let result = 10 + "Phoneal";
 print(result);
