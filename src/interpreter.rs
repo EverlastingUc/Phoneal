@@ -84,7 +84,14 @@ pub fn evaluate(e: &Expression, env: &HashMap<String, Value>) -> Result<Value, D
     let mut out = Vec::new();
     let mut depth = 0;
     let mut steps = 0;
-    evaluate_expression(\n        e,\n        &scopes,\n        &HashMap::new(),\n        &mut out,\n        &mut depth,\n        &mut steps,\n    )
+    evaluate_expression(
+        e,
+        &scopes,
+        &HashMap::new(),
+        &mut out,
+        &mut depth,
+        &mut steps,
+    )
 }
 fn evaluate_expression(
     e: &Expression,
@@ -208,7 +215,9 @@ fn execute_statements(
 ) -> Result<Option<Value>, Diagnostic> {
     for s in ss {
         if *steps >= MAX_EXECUTION_STEPS {
-            return Err(Diagnostic::runtime(format!(\n                "Maximum execution step budget ({MAX_EXECUTION_STEPS}) exceeded"\n            )));
+            return Err(Diagnostic::runtime(format!(
+                "Maximum execution step budget ({MAX_EXECUTION_STEPS}) exceeded"
+            )));
         }
         *steps += 1;
         match s {
