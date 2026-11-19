@@ -301,14 +301,14 @@ mod tests {
     fn block_local_name_does_not_escape_scope() {
         let result = analyze_all(&statements("{ let hidden = 1; } print(hidden);"));
         assert_eq!(result.len(), 1);
-        assert_eq!(result.iter().next().unwrap().message, "Undefined variable 'hidden'");
+        assert_eq!(
+            result.iter().next().unwrap().message,
+            "Undefined variable 'hidden'"
+        );
     }
 
     #[test]
     fn nested_blocks_resolve_outer_variables() {
-        assert!(analyze(&statements(
-            "let outer = 1; { { print(outer); } }"
-        ))
-        .is_ok());
+        assert!(analyze(&statements("let outer = 1; { { print(outer); } }")).is_ok());
     }
 }

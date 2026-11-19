@@ -140,7 +140,7 @@ mod tests {
     fn scans_block_delimiters() {
         let tokens = Lexer::new("{ let x = 1; }").scan().unwrap();
         assert_eq!(tokens[0].kind, TokenKind::LeftBrace);
-        assert_eq!(tokens[5].kind, TokenKind::RightBrace);
+        assert_eq!(tokens[6].kind, TokenKind::RightBrace);
     }
 
     #[test]
