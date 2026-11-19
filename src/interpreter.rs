@@ -356,7 +356,6 @@ mod tests {
         .unwrap_err()
         .contains("Maximum function call depth"));
     }
-}
     #[test]
     fn enforces_per_run_statement_budget() {
         let repeated = "print(0);".repeat(400);
@@ -367,3 +366,4 @@ mod tests {
         assert!(error.contains("execution step budget"));
     }
 
+}
