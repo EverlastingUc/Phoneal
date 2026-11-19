@@ -371,7 +371,7 @@ mod tests {
     fn enforces_per_run_statement_budget() {
         let repeated = "print(0);".repeat(400);
         let source = format!(
-            "function repeat(n: integer) returns integer {{ if (n == 0) {{ return 0; }} repeat(n - 1); {repeated} return 0; }} print(repeat(127));"
+            "function repeat(n: integer) returns integer {{ if (n == 0) {{ return 0; }} create nested_result = repeat(n - 1); {repeated} return 0; }} print(repeat(127));"
         );
         let error = run(&source).unwrap_err();
         assert!(error.contains("execution step budget"));
