@@ -268,7 +268,7 @@ fn compiler_rejects_unknown_type_names() {
 
 #[test]
 fn boolean_conditions_and_short_circuit_execute_end_to_end() {
-    assert_eq!(run("create age = 20; if (age >= 18 and true) { print(\"adult\"); } else { print(\"minor\"); } if (false and missing == 1) { print(\"wrong\"); } else { print(\"short-circuited\"); }").unwrap(),["adult","short-circuited"]);
+    assert_eq!(run("create age = 20; if (age >= 18 and true) { print(\"adult\"); } else { print(\"minor\"); } if (false and 1 / 0 == 0) { print(\"wrong\"); } else { print(\"short-circuited\"); }").unwrap(),["adult","short-circuited"]);
 }
 #[test]
 fn recursive_factorial_executes_with_if_else() {

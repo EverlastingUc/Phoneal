@@ -315,7 +315,7 @@ mod tests {
     }
     #[test]
     fn short_circuits_and_or() {
-        assert_eq!(run("if (false and missing == 1) { print(1); } else { print(2); } if (true or missing == 1) { print(3); }").unwrap(),["2","3"]);
+        assert_eq!(run("if (false and 1 / 0 == 0) { print(1); } else { print(2); } if (true or 1 / 0 == 0) { print(3); }").unwrap(),["2","3"]);
     }
     #[test]
     fn evaluates_not_and_comparisons() {
