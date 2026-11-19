@@ -256,7 +256,7 @@ pub fn execute(statements: &[Statement]) -> Result<Vec<String>, Diagnostic> {
                 RuntimeFunction {
                     parameters: parameters
                         .iter()
-                        .map(|(parameter, _)| parameter.clone())
+                        .map(|(parameter, _, _)| parameter.clone())
                         .collect(),
                     body: body.clone(),
                 },

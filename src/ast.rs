@@ -1,4 +1,4 @@
-use crate::{diagnostic::SourceLocation, token::TokenKind};
+use crate::{diagnostic::SourceLocation, token::TokenKind, types::PhonealType};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
@@ -37,7 +37,9 @@ pub enum Statement {
     Function {
         name: String,
         name_location: SourceLocation,
-        parameters: Vec<(String, SourceLocation)>,
+        parameters: Vec<(String, PhonealType, SourceLocation)>,
+        return_type: PhonealType,
+        return_type_location: SourceLocation,
         body: Vec<Statement>,
     },
     Block {

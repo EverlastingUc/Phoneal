@@ -4,6 +4,8 @@ pub enum TokenKind {
     Print,
     Fn,
     Return,
+    Colon,
+    Arrow,
     Identifier(String),
     Integer(i64),
     String(String),

@@ -8,11 +8,11 @@ Phoneal is an experimental security-first, general-purpose programming language.
 
 ## Current implementation
 
-The Rust prototype includes a hand-written lexer, recursive-descent parser, arithmetic expressions, immutable `let` declarations, `print(...)` statements, nested lexical blocks, and user-defined functions. Functions support positional parameters, calls, expression returns, nested calls, and recursion with a bounded call depth. The semantic pass checks variable names, function existence, argument counts, and primitive expression types.
+The Rust prototype includes a hand-written lexer, recursive-descent parser, arithmetic expressions, immutable `let` declarations, `print(...)` statements, nested lexical blocks, and user-defined functions. Functions support typed positional parameters, calls, expression returns, nested calls, and recursion with a bounded call depth. The semantic pass checks variable names, function existence, argument counts, argument types, return types, and guaranteed returns.
 
 The current primitive types are `integer` and `string`. Integer arithmetic is checked for overflow and division by zero; strings support concatenation with `+`. Nested blocks create lexical scopes with controlled shadowing.
 
-Function parameter and return types are not yet declared or statically inferred across function boundaries. Function bodies can access the global scope as it exists when called, but do not capture caller-local variables.
+Functions must annotate each parameter and return type as `integer` or `string`. Function bodies can access the global scope as it exists when called, but do not capture caller-local variables.
 
 This is not yet a bytecode compiler, sandbox, or production-ready secure language. Lexing and parsing still stop at the first error.
 

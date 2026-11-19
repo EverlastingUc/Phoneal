@@ -6,7 +6,7 @@ Phoneal currently uses a Rust-hosted compile-and-interpret pipeline:
 .phnl source
     -> Lexer (tokens with line/column)
     -> Recursive-descent Parser (AST)
-    -> Semantic Analysis (lexical scopes, function names/arity, primitive types)
+    -> Semantic Analysis (lexical scopes, typed function signatures, arity, return paths, primitive types)
     -> Interpreter (checked i64 arithmetic, lexical environments, function call frames)
 ```
 

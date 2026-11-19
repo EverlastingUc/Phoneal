@@ -44,7 +44,7 @@ impl Lexer {
                 ' ' | '\r' | '\t' | '\n' => continue,
                 '=' => TokenKind::Equal,
                 '+' => TokenKind::Plus,
-                '-' => TokenKind::Minus,
+                '-' => { if self.peek() == Some('>') { self.advance(); TokenKind::Arrow } else { TokenKind::Minus } },
                 '*' => TokenKind::Star,
                 '/' => TokenKind::Slash,
                 '(' => TokenKind::LeftParen,
@@ -52,6 +52,7 @@ impl Lexer {
                 '{' => TokenKind::LeftBrace,
                 '}' => TokenKind::RightBrace,
                 ',' => TokenKind::Comma,
+                ':' => TokenKind::Colon,
                 ';' => TokenKind::Semicolon,
                 '"' => {
                     let mut value = String::new();

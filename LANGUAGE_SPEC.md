@@ -8,8 +8,8 @@ This document records the implemented subset. It is not a promise that syntax is
 - Identifiers: ASCII letters or underscore followed by ASCII letters, digits, or underscores
 - Integer literals: values in the signed 64-bit range
 - String literals: double-quoted, single-line strings
-- Operators: `=`, `+`, `-`, `*`, `/`
-- Delimiters: `(`, `)`, `{`, `}`, `,`, `;`
+- Operators: `=`, `+`, `-`, `*`, `/`, `->`
+- Delimiters: `(`, `)`, `{`, `}`, `,`, `:`, `;`
 
 ## Statements and expressions
 
@@ -27,25 +27,26 @@ print(greeting);
 
 A declaration is immutable in the current prototype. Each block creates a lexical scope. A name can be shadowed in a nested block, but cannot be redeclared in the same scope.
 
-## Functions (provisional syntax)
+## Typed functions
+
+Function parameters and return types are explicitly annotated:
 
 ```phoneal
-fn add(a, b) {
+fn add(a: integer, b: integer) -> integer {
     return a + b;
 }
 
-fn square(value) {
-    return value * value;
+fn greet(name: string) -> string {
+    return "Hello, " + name;
 }
 
-let answer = add(20, 22);
-print(answer);
-print(square(7));
+print(add(20, 22));
+print(greet("Phoneal"));
 ```
 
-Functions are declared with `fn`, accept zero or more positional parameters, and return one expression using `return expression;`. Calls use ordinary expression syntax, so they can be nested or used in initializers. Functions can call functions declared later and can call themselves recursively. Runtime recursion is capped at 128 active calls to bound accidental stack exhaustion.
+Supported type names are `integer` and `string`. The compiler checks each argument against its parameter type, checks return expressions against the declared return type, and rejects functions without a guaranteed return. Because the current language has no conditional statements or loops, a return in the function's straight-line statement sequence (including an unconditional nested block) guarantees completion. This analysis must be revisited when branching and loops are introduced.
 
-The current prototype checks that called functions exist, argument counts match, parameter names are not duplicated, and `return` occurs inside a function. Parameter and return types are not yet part of the language syntax; full static type checking across function boundaries is future work. Functions are not closures and do not capture caller-local variables.
+Functions may call functions declared later and may recurse. Runtime recursion is capped at 128 active calls. Functions are top-level declarations and are not closures.
 
 ## Static types
 
