@@ -13,9 +13,7 @@ use lexer::Lexer;
 use parser::Parser;
 use semantic::analyze_all;
 
-pub fn compile_with_diagnostics(
-    source: &str,
-) -> Result<Vec<Statement>, Vec<Diagnostic>> {
+pub fn compile_with_diagnostics(source: &str) -> Result<Vec<Statement>, Vec<Diagnostic>> {
     let tokens = Lexer::new(source)
         .scan()
         .map_err(|diagnostic| vec![diagnostic])?;
