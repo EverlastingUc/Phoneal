@@ -1,8 +1,8 @@
 use crate::{
     ast::{Expression, Statement},
-    types::PhonealType,
     diagnostic::{Diagnostic, SourceLocation},
     token::{Token, TokenKind},
+    types::PhonealType,
 };
 
 pub struct Parser {
@@ -152,19 +152,39 @@ impl Parser {
                 };
                 self.require(&TokenKind::Colon, "Expected ':' after parameter name")?;
                 let parameter_type = self.parse_type()?;
-                parameters.push((parameter, parameter_type, SourceLocation { line: token.line, column: token.column }));
+                parameters.push((
+                    parameter,
+                    parameter_type,
+                    SourceLocation {
+                        line: token.line,
+                        column: token.column,
+                    },
+                ));
                 if self.take(&TokenKind::RightParen) {
                     break;
                 }
                 self.require(&TokenKind::Comma, "Expected ',' or ')' after parameter")?;
             }
         }
-        self.require(&TokenKind::Arrow, "Expected '->' before function return type")?;
-        let return_type_location = SourceLocation { line: self.peek().line, column: self.peek().column };
+        self.require(
+            &TokenKind::Arrow,
+            "Expected '->' before function return type",
+        )?;
+        let return_type_location = SourceLocation {
+            line: self.peek().line,
+            column: self.peek().column,
+        };
         let return_type = self.parse_type()?;
         self.require(&TokenKind::LeftBrace, "Expected '{' before function body")?;
         let body = self.parse_block_contents()?;
-        Ok(Statement::Function { name, name_location, parameters, return_type, return_type_location, body })
+        Ok(Statement::Function {
+            name,
+            name_location,
+            parameters,
+            return_type,
+            return_type_location,
+            body,
+        })
     }
 
     fn parse_type(&mut self) -> Result<PhonealType, Diagnostic> {
@@ -172,8 +192,16 @@ impl Parser {
         match token.kind {
             TokenKind::Identifier(name) if name == "integer" => Ok(PhonealType::Integer),
             TokenKind::Identifier(name) if name == "string" => Ok(PhonealType::String),
-            TokenKind::Identifier(name) => Err(Diagnostic::parsing(format!("Unknown type '{name}'; expected 'integer' or 'string'"), token.line, token.column)),
-            _ => Err(Diagnostic::parsing("Expected type name 'integer' or 'string'", token.line, token.column)),
+            TokenKind::Identifier(name) => Err(Diagnostic::parsing(
+                format!("Unknown type '{name}'; expected 'integer' or 'string'"),
+                token.line,
+                token.column,
+            )),
+            _ => Err(Diagnostic::parsing(
+                "Expected type name 'integer' or 'string'",
+                token.line,
+                token.column,
+            )),
         }
     }
 
@@ -297,7 +325,8 @@ mod tests {
 
     #[test]
     fn parses_function_declarations_and_calls() {
-        let source = "fn add(a: integer, b: integer) -> integer { return a + b; } let result = add(20, 22);";
+        let source =
+            "fn add(a: integer, b: integer) -> integer { return a + b; } let result = add(20, 22);";
         let statements = Parser::new(Lexer::new(source).scan().unwrap())
             .parse()
             .unwrap();

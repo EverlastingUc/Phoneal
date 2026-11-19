@@ -44,7 +44,14 @@ impl Lexer {
                 ' ' | '\r' | '\t' | '\n' => continue,
                 '=' => TokenKind::Equal,
                 '+' => TokenKind::Plus,
-                '-' => { if self.peek() == Some('>') { self.advance(); TokenKind::Arrow } else { TokenKind::Minus } },
+                '-' => {
+                    if self.peek() == Some('>') {
+                        self.advance();
+                        TokenKind::Arrow
+                    } else {
+                        TokenKind::Minus
+                    }
+                }
                 '*' => TokenKind::Star,
                 '/' => TokenKind::Slash,
                 '(' => TokenKind::LeftParen,

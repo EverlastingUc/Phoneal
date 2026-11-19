@@ -184,10 +184,14 @@ fn nested_scopes_can_read_outer_bindings() {
         ["42"]
     );
 }
- 
+
 #[test]
 fn typed_functions_accept_matching_arguments_and_returns() {
-    assert_eq!(run("fn add(a: integer, b: integer) -> integer { return a + b; } print(add(20, 22));").unwrap(), ["42"]);
+    assert_eq!(
+        run("fn add(a: integer, b: integer) -> integer { return a + b; } print(add(20, 22));")
+            .unwrap(),
+        ["42"]
+    );
 }
 
 #[test]
@@ -197,20 +201,30 @@ fn typed_string_functions_execute() {
 
 #[test]
 fn compiler_rejects_wrong_function_argument_type() {
-    let errors = compile_with_diagnostics("fn identity(value: integer) -> integer { return value; } print(identity(\"bad\"));").unwrap_err();
-    assert!(errors.iter().any(|error| error.message.contains("expects integer, received string")));
+    let errors = compile_with_diagnostics(
+        "fn identity(value: integer) -> integer { return value; } print(identity(\"bad\"));",
+    )
+    .unwrap_err();
+    assert!(errors
+        .iter()
+        .any(|error| error.message.contains("expects integer, received string")));
 }
 
 #[test]
 fn compiler_rejects_wrong_function_return_type() {
-    let errors = compile_with_diagnostics("fn invalid() -> integer { return \"bad\"; }").unwrap_err();
-    assert!(errors.iter().any(|error| error.message.contains("Return type mismatch")));
+    let errors =
+        compile_with_diagnostics("fn invalid() -> integer { return \"bad\"; }").unwrap_err();
+    assert!(errors
+        .iter()
+        .any(|error| error.message.contains("Return type mismatch")));
 }
 
 #[test]
 fn compiler_rejects_functions_without_guaranteed_return() {
     let errors = compile_with_diagnostics("fn invalid() -> integer { let x = 1; }").unwrap_err();
-    assert!(errors.iter().any(|error| error.message.contains("does not return")));
+    assert!(errors
+        .iter()
+        .any(|error| error.message.contains("does not return")));
 }
 
 #[test]
@@ -220,11 +234,15 @@ fn compiler_accepts_return_inside_unconditional_nested_block() {
 
 #[test]
 fn typed_recursive_call_type_is_known_during_analysis() {
-    assert!(compile_with_diagnostics("fn recurse(n: integer) -> integer { return recurse(n); }").is_ok());
+    assert!(
+        compile_with_diagnostics("fn recurse(n: integer) -> integer { return recurse(n); }")
+            .is_ok()
+    );
 }
 
 #[test]
 fn compiler_rejects_unknown_type_names() {
-    let errors = compile_with_diagnostics("fn f(value: boolean) -> integer { return 1; }").unwrap_err();
+    let errors =
+        compile_with_diagnostics("fn f(value: boolean) -> integer { return 1; }").unwrap_err();
     assert!(errors[0].message.contains("Unknown type"));
 }
