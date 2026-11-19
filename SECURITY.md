@@ -1,9 +1,11 @@
 # Security Policy
 
-Phoneal is an early experimental prototype and is not production-ready. Do not use it to execute untrusted programs.
+Phoneal is an experimental prototype and is not production-ready. Do not use the current interpreter to execute untrusted programs.
 
-The current interpreter has no sandbox, capability-based filesystem/network permissions, verified bytecode, signed package system, or independent security audit. Static type checking, lexical scopes, function arity checks, and the recursion limit are correctness and resource-bounding features, not security boundaries. The recursion limit is not a general CPU, memory, or wall-clock resource quota.
+The current implementation provides static type checking, lexical scopes, checked integer arithmetic, source diagnostics, and a bounded function-call depth. These are correctness and limited robustness measures, not a security boundary.
 
-The security-first goal is not a claim that the current implementation is secure or unhackable.
+There is currently no bytecode verifier, virtual machine, capability enforcement, filesystem/network isolation, process isolation, memory quota, instruction budget, or wall-clock execution limit. The current interpreter must be treated as trusted-code-only.
+
+The security-first goal is not a claim that Phoneal is secure or unhackable. The sandbox milestone will require a threat model, deny-by-default capability design, independent enforcement, resource accounting, hostile-input tests, and security review.
 
 Please report suspected vulnerabilities privately through GitHub's security reporting feature if enabled. Avoid publishing exploitable details in public issues.

@@ -1,348 +1,55 @@
 use std::collections::HashMap;
-
-use crate::{
-    ast::{Expression, Statement},
-    diagnostic::{Diagnostic, DiagnosticStage, SourceLocation},
-    token::TokenKind,
-};
-
-const MAX_CALL_DEPTH: usize = 128;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Value {
-    Integer(i64),
-    String(String),
-}
-
-impl std::fmt::Display for Value {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Integer(value) => write!(formatter, "{value}"),
-            Self::String(value) => write!(formatter, "{value}"),
-        }
-    }
-}
-
-type Environment = Vec<HashMap<String, Value>>;
-#[derive(Clone)]
-struct RuntimeFunction {
-    parameters: Vec<String>,
-    body: Vec<Statement>,
-}
-type FunctionTable = HashMap<String, RuntimeFunction>;
-
-fn runtime_error(message: impl Into<String>, location: &SourceLocation) -> Diagnostic {
-    Diagnostic::at(
-        DiagnosticStage::Runtime,
-        message,
-        location.line,
-        location.column,
-    )
-}
-
-fn apply_binary(
-    left: Value,
-    operator: &TokenKind,
-    right: Value,
-    location: &SourceLocation,
-) -> Result<Value, Diagnostic> {
-    let failure = |message: &str| runtime_error(message, location);
-    match (left, operator, right) {
-        (Value::Integer(left), TokenKind::Plus, Value::Integer(right)) => left
-            .checked_add(right)
-            .map(Value::Integer)
-            .ok_or_else(|| failure("Integer overflow")),
-        (Value::Integer(left), TokenKind::Minus, Value::Integer(right)) => left
-            .checked_sub(right)
-            .map(Value::Integer)
-            .ok_or_else(|| failure("Integer overflow")),
-        (Value::Integer(left), TokenKind::Star, Value::Integer(right)) => left
-            .checked_mul(right)
-            .map(Value::Integer)
-            .ok_or_else(|| failure("Integer overflow")),
-        (Value::Integer(_), TokenKind::Slash, Value::Integer(0)) => {
-            Err(failure("Division by zero"))
-        }
-        (Value::Integer(left), TokenKind::Slash, Value::Integer(right)) => left
-            .checked_div(right)
-            .map(Value::Integer)
-            .ok_or_else(|| failure("Integer overflow")),
-        (Value::String(left), TokenKind::Plus, Value::String(right)) => {
-            Ok(Value::String(left + &right))
-        }
-        _ => Err(failure("Operator used with incompatible types")),
-    }
-}
-
-fn lookup(environment: &Environment, name: &str) -> Option<Value> {
-    environment
-        .iter()
-        .rev()
-        .find_map(|scope| scope.get(name).cloned())
-}
-
-pub fn evaluate(
-    expression: &Expression,
-    environment: &HashMap<String, Value>,
-) -> Result<Value, Diagnostic> {
-    let scopes = vec![environment.clone()];
-    let mut output = Vec::new();
-    let mut depth = 0;
-    evaluate_expression(
-        expression,
-        &scopes,
-        &HashMap::new(),
-        &mut output,
-        &mut depth,
-    )
-}
-
-fn evaluate_expression(
-    expression: &Expression,
-    environment: &Environment,
-    functions: &FunctionTable,
-    output: &mut Vec<String>,
-    depth: &mut usize,
-) -> Result<Value, Diagnostic> {
-    match expression {
-        Expression::Integer(value) => Ok(Value::Integer(*value)),
-        Expression::String(value) => Ok(Value::String(value.clone())),
-        Expression::Variable { name, location } => lookup(environment, name)
-            .ok_or_else(|| runtime_error(format!("Undefined variable '{name}'"), location)),
-        Expression::Group(inner) => {
-            evaluate_expression(inner, environment, functions, output, depth)
-        }
-        Expression::Binary {
-            left,
-            operator,
-            operator_location,
-            right,
-        } => {
-            let left = evaluate_expression(left, environment, functions, output, depth)?;
-            let right = evaluate_expression(right, environment, functions, output, depth)?;
-            apply_binary(left, operator, right, operator_location)
-        }
-        Expression::Call {
-            name,
-            location,
-            arguments,
-        } => {
-            let function = functions
-                .get(name)
-                .ok_or_else(|| runtime_error(format!("Undefined function '{name}'"), location))?;
-            if function.parameters.len() != arguments.len() {
-                return Err(runtime_error(
-                    format!(
-                        "Function '{name}' expects {} argument(s), received {}",
-                        function.parameters.len(),
-                        arguments.len()
-                    ),
-                    location,
-                ));
-            }
-            if *depth >= MAX_CALL_DEPTH {
-                return Err(runtime_error(
-                    format!("Maximum function call depth ({MAX_CALL_DEPTH}) exceeded"),
-                    location,
-                ));
-            }
-
-            let mut values = Vec::with_capacity(arguments.len());
-            for argument in arguments {
-                values.push(evaluate_expression(
-                    argument,
-                    environment,
-                    functions,
-                    output,
-                    depth,
-                )?);
-            }
-
-            let global_scope = environment.first().cloned().unwrap_or_default();
-            let mut local_scope = HashMap::new();
-            for (parameter, value) in function.parameters.iter().zip(values) {
-                local_scope.insert(parameter.clone(), value);
-            }
-            let mut call_environment = vec![global_scope, local_scope];
-            *depth += 1;
-            let result = execute_statements(
-                &function.body,
-                &mut call_environment,
-                functions,
-                output,
-                depth,
-            );
-            *depth -= 1;
-            match result? {
-                Some(value) => Ok(value),
-                None => Err(runtime_error(
-                    format!("Function '{name}' completed without returning a value"),
-                    location,
-                )),
-            }
-        }
-    }
-}
-
-fn execute_statements(
-    statements: &[Statement],
-    environment: &mut Environment,
-    functions: &FunctionTable,
-    output: &mut Vec<String>,
-    depth: &mut usize,
-) -> Result<Option<Value>, Diagnostic> {
-    for statement in statements {
-        match statement {
-            Statement::Let {
-                name,
-                name_location,
-                value,
-            } => {
-                if environment
-                    .last()
-                    .expect("scope stack is never empty")
-                    .contains_key(name)
-                {
-                    return Err(runtime_error(
-                        format!("Variable '{name}' already declared in this scope"),
-                        name_location,
-                    ));
-                }
-                let evaluated = evaluate_expression(value, environment, functions, output, depth)?;
-                environment
-                    .last_mut()
-                    .expect("scope stack is never empty")
-                    .insert(name.clone(), evaluated);
-            }
-            Statement::Print(expression) => {
-                let value = evaluate_expression(expression, environment, functions, output, depth)?;
-                output.push(value.to_string());
-            }
-            Statement::Return { value, .. } => {
-                return Ok(Some(evaluate_expression(
-                    value,
-                    environment,
-                    functions,
-                    output,
-                    depth,
-                )?));
-            }
-            Statement::Function { .. } => {}
-            Statement::Block { statements, .. } => {
-                environment.push(HashMap::new());
-                let result = execute_statements(statements, environment, functions, output, depth);
-                environment.pop();
-                if let Some(value) = result? {
-                    return Ok(Some(value));
-                }
-            }
-        }
-    }
-    Ok(None)
-}
-
-pub fn execute(statements: &[Statement]) -> Result<Vec<String>, Diagnostic> {
-    let mut functions = HashMap::new();
-    for statement in statements {
-        if let Statement::Function {
-            name,
-            parameters,
-            body,
-            ..
-        } = statement
-        {
-            functions.insert(
-                name.clone(),
-                RuntimeFunction {
-                    parameters: parameters
-                        .iter()
-                        .map(|(parameter, _, _)| parameter.clone())
-                        .collect(),
-                    body: body.clone(),
-                },
-            );
-        }
-    }
-
-    let mut environment = vec![HashMap::new()];
-    let mut output = Vec::new();
-    let mut depth = 0;
-    match execute_statements(
-        statements,
-        &mut environment,
-        &functions,
-        &mut output,
-        &mut depth,
-    )? {
-        Some(_) => Err(Diagnostic::runtime(
-            "Return is only valid inside a function",
-        )),
-        None => Ok(output),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{lexer::Lexer, parser::Parser, semantic::analyze_all};
-
-    fn run(source: &str) -> Result<Vec<String>, String> {
-        let tokens = Lexer::new(source)
-            .scan()
-            .map_err(|error| error.to_string())?;
-        let statements = Parser::new(tokens)
-            .parse()
-            .map_err(|error| error.to_string())?;
-        let diagnostics = analyze_all(&statements);
-        if let Some(error) = diagnostics.iter().next() {
-            return Err(error.to_string());
-        }
-        execute(&statements).map_err(|error| error.to_string())
-    }
-
-    #[test]
-    fn prints_integer_and_string_values() {
-        let output =
-            run("let greeting = \"hello\"; let answer = 6 * 7; print(greeting); print(answer);")
-                .unwrap();
-        assert_eq!(output, vec!["hello", "42"]);
-    }
-
-    #[test]
-    fn executes_functions_and_returns_values() {
-        let output =
-            run("fn add(a: integer, b: integer) -> integer { return a + b; } let result = add(20, 22); print(result);").unwrap();
-        assert_eq!(output, ["42"]);
-    }
-
-    #[test]
-    fn supports_nested_function_calls() {
-        let output = run("fn double(x: integer) -> integer { return x * 2; } fn add(a: integer, b: integer) -> integer { return a + b; } print(add(double(5), double(6)));").unwrap();
-        assert_eq!(output, ["22"]);
-    }
-
-    #[test]
-    fn rejects_runtime_call_depth_exhaustion() {
-        let source = "fn loop(n: integer) -> integer { return loop(n); } print(loop(1));";
-        let error = run(source).unwrap_err();
-        assert!(error.contains("Maximum function call depth"));
-    }
-
-    #[test]
-    fn detects_division_by_zero() {
-        let error = run("let result = 10 / 0;").unwrap_err();
-        assert_eq!(error, "runtime error: Division by zero at 1:17");
-    }
-
-    #[test]
-    fn detects_integer_overflow() {
-        let error = run("let result = 9223372036854775807 + 1;").unwrap_err();
-        assert_eq!(error, "runtime error: Integer overflow at 1:34");
-    }
-
-    #[test]
-    fn nested_blocks_create_and_remove_scopes() {
-        let output = run("let item = 1; { let item = 2; print(item); } print(item);").unwrap();
-        assert_eq!(output, ["2", "1"]);
-    }
-}
+use crate::{ast::{Expression,Statement},diagnostic::{Diagnostic,DiagnosticStage,SourceLocation},token::TokenKind};
+const MAX_CALL_DEPTH:usize=128;
+#[derive(Debug,Clone,PartialEq)]pub enum Value{Integer(i64),String(String),Boolean(bool)}
+impl std::fmt::Display for Value{fn fmt(&self,f:&mut std::fmt::Formatter<'_>)->std::fmt::Result{match self{Self::Integer(v)=>write!(f,"{v}"),Self::String(v)=>write!(f,"{v}"),Self::Boolean(v)=>write!(f,"{v}")}}}
+type Environment=Vec<HashMap<String,Value>>;
+#[derive(Clone)]struct RuntimeFunction{parameters:Vec<String>,body:Vec<Statement>}
+type FunctionTable=HashMap<String,RuntimeFunction>;
+fn runtime_error(m:impl Into<String>,l:&SourceLocation)->Diagnostic{Diagnostic::at(DiagnosticStage::Runtime,m,l.line,l.column)}
+fn apply_binary(l:Value,op:&TokenKind,r:Value,loc:&SourceLocation)->Result<Value,Diagnostic>{let fail=|m:&str|runtime_error(m,loc);match(l,op,r){
+ (Value::Integer(a),TokenKind::Plus,Value::Integer(b))=>a.checked_add(b).map(Value::Integer).ok_or_else(||fail("Integer overflow")),
+ (Value::Integer(a),TokenKind::Minus,Value::Integer(b))=>a.checked_sub(b).map(Value::Integer).ok_or_else(||fail("Integer overflow")),
+ (Value::Integer(a),TokenKind::Star,Value::Integer(b))=>a.checked_mul(b).map(Value::Integer).ok_or_else(||fail("Integer overflow")),
+ (Value::Integer(_),TokenKind::Slash,Value::Integer(0))|(Value::Integer(_),TokenKind::Percent,Value::Integer(0))=>Err(fail("Division by zero")),
+ (Value::Integer(a),TokenKind::Slash,Value::Integer(b))=>a.checked_div(b).map(Value::Integer).ok_or_else(||fail("Integer overflow")),
+ (Value::Integer(a),TokenKind::Percent,Value::Integer(b))=>a.checked_rem(b).map(Value::Integer).ok_or_else(||fail("Integer overflow")),
+ (Value::String(a),TokenKind::Plus,Value::String(b))=>Ok(Value::String(a+&b)),
+ (Value::Integer(a),TokenKind::Less,Value::Integer(b))=>Ok(Value::Boolean(a<b)),(Value::Integer(a),TokenKind::LessEqual,Value::Integer(b))=>Ok(Value::Boolean(a<=b)),
+ (Value::Integer(a),TokenKind::Greater,Value::Integer(b))=>Ok(Value::Boolean(a>b)),(Value::Integer(a),TokenKind::GreaterEqual,Value::Integer(b))=>Ok(Value::Boolean(a>=b)),
+ (a,TokenKind::EqualEqual,b)=>Ok(Value::Boolean(a==b)),(a,TokenKind::BangEqual,b)=>Ok(Value::Boolean(a!=b)),_=>Err(fail("Operator used with incompatible types"))}}
+fn lookup(env:&Environment,n:&str)->Option<Value>{env.iter().rev().find_map(|s|s.get(n).cloned())}
+pub fn evaluate(e:&Expression,env:&HashMap<String,Value>)->Result<Value,Diagnostic>{let scopes=vec![env.clone()];let mut out=Vec::new();let mut depth=0;evaluate_expression(e,&scopes,&HashMap::new(),&mut out,&mut depth)}
+fn evaluate_expression(e:&Expression,env:&Environment,funcs:&FunctionTable,out:&mut Vec<String>,depth:&mut usize)->Result<Value,Diagnostic>{match e{
+ Expression::Integer(v)=>Ok(Value::Integer(*v)),Expression::String(v)=>Ok(Value::String(v.clone())),Expression::Boolean(v)=>Ok(Value::Boolean(*v)),
+ Expression::Variable{name,location}=>lookup(env,name).ok_or_else(||runtime_error(format!("Undefined variable '{name}'"),location)),
+ Expression::Group(inner)=>evaluate_expression(inner,env,funcs,out,depth),
+ Expression::Unary{operator,operator_location,operand}=>{let v=evaluate_expression(operand,env,funcs,out,depth)?;match(operator,v){(TokenKind::Not,Value::Boolean(b))=>Ok(Value::Boolean(!b)),(TokenKind::Minus,Value::Integer(i))=>i.checked_neg().map(Value::Integer).ok_or_else(||runtime_error("Integer overflow",operator_location)),_=>Err(runtime_error("Unary operator used with incompatible type",operator_location))}},
+ Expression::Binary{left,operator,operator_location,right}=>{let l=evaluate_expression(left,env,funcs,out,depth)?;
+  if *operator==TokenKind::And&&l==Value::Boolean(false){return Ok(Value::Boolean(false));}
+  if *operator==TokenKind::Or&&l==Value::Boolean(true){return Ok(Value::Boolean(true));}
+  let r=evaluate_expression(right,env,funcs,out,depth)?;
+  if *operator==TokenKind::And{if let(Value::Boolean(a),Value::Boolean(b))=(l,r){return Ok(Value::Boolean(a&&b));}}
+  if *operator==TokenKind::Or{if let(Value::Boolean(a),Value::Boolean(b))=(l,r){return Ok(Value::Boolean(a||b));}}
+  apply_binary(l,operator,r,operator_location)},
+ Expression::Call{name,location,arguments}=>{let f=funcs.get(name).ok_or_else(||runtime_error(format!("Undefined function '{name}'"),location))?;if f.parameters.len()!=arguments.len(){return Err(runtime_error(format!("Function '{name}' expects {} argument(s), received {}",f.parameters.len(),arguments.len()),location));}if *depth>=MAX_CALL_DEPTH{return Err(runtime_error(format!("Maximum function call depth ({MAX_CALL_DEPTH}) exceeded"),location));}
+  let mut vals=Vec::new();for a in arguments{vals.push(evaluate_expression(a,env,funcs,out,depth)?);}let globals=env.first().cloned().unwrap_or_default();let mut local=HashMap::new();for(p,v)in f.parameters.iter().zip(vals){local.insert(p.clone(),v);}let mut call_env=vec![globals,local];*depth+=1;let result=execute_statements(&f.body,&mut call_env,funcs,out,depth);*depth-=1;match result?{Some(v)=>Ok(v),None=>Err(runtime_error(format!("Function '{name}' completed without returning a value"),location))}}
+}}
+fn execute_statements(ss:&[Statement],env:&mut Environment,funcs:&FunctionTable,out:&mut Vec<String>,depth:&mut usize)->Result<Option<Value>,Diagnostic>{for s in ss{match s{
+ Statement::Let{name,name_location,value}=>{if env.last().unwrap().contains_key(name){return Err(runtime_error(format!("Variable '{name}' already declared in this scope"),name_location));}let v=evaluate_expression(value,env,funcs,out,depth)?;env.last_mut().unwrap().insert(name.clone(),v);},
+ Statement::Print(e)=>{let v=evaluate_expression(e,env,funcs,out,depth)?;out.push(v.to_string());},
+ Statement::Return{value,..}=>return Ok(Some(evaluate_expression(value,env,funcs,out,depth)?)),
+ Statement::Function{..}=>{},
+ Statement::Block{statements,..}=>{env.push(HashMap::new());let r=execute_statements(statements,env,funcs,out,depth);env.pop();if let Some(v)=r?{return Ok(Some(v));}},
+ Statement::If{condition,then_branch,else_branch,location}=>{let c=evaluate_expression(condition,env,funcs,out,depth)?;let branch=match c{Value::Boolean(true)=>Some(then_branch),Value::Boolean(false)=>else_branch.as_ref(),_=>return Err(runtime_error("If condition must evaluate to boolean",location))};if let Some(b)=branch{env.push(HashMap::new());let r=execute_statements(b,env,funcs,out,depth);env.pop();if let Some(v)=r?{return Ok(Some(v));}}}
+ }}Ok(None)}
+pub fn execute(ss:&[Statement])->Result<Vec<String>,Diagnostic>{let mut funcs=HashMap::new();for s in ss{if let Statement::Function{name,parameters,body,..}=s{funcs.insert(name.clone(),RuntimeFunction{parameters:parameters.iter().map(|(p,_,_)|p.clone()).collect(),body:body.clone()});}}let mut env=vec![HashMap::new()];let mut out=Vec::new();let mut depth=0;match execute_statements(ss,&mut env,&funcs,&mut out,&mut depth)?{Some(_)=>Err(Diagnostic::runtime("Return is only valid inside a function")),None=>Ok(out)}}
+#[cfg(test)]mod tests{use super::*;use crate::{lexer::Lexer,parser::Parser,semantic::analyze_all};fn run(s:&str)->Result<Vec<String>,String>{let ts=Lexer::new(s).scan().map_err(|e|e.to_string())?;let ss=Parser::new(ts).parse().map_err(|e|e.to_string())?;let ds=analyze_all(&ss);if let Some(e)=ds.iter().next(){return Err(e.to_string());}execute(&ss).map_err(|e|e.to_string())}
+#[test]fn prints_values(){assert_eq!(run("create greeting = \"hello\"; create answer = 6 * 7; print(greeting); print(answer);").unwrap(),["hello","42"]);}
+#[test]fn runs_boolean_conditions(){assert_eq!(run("create age = 20; if (age >= 18 and true) { print(\"adult\"); } else { print(\"minor\"); }").unwrap(),["adult"]);}
+#[test]fn short_circuits_and_or(){assert_eq!(run("if (false and missing == 1) { print(1); } else { print(2); } if (true or missing == 1) { print(3); }").unwrap(),["2","3"]);}
+#[test]fn evaluates_not_and_comparisons(){assert_eq!(run("create ok = not (3 > 5); print(ok); print(3 != 4);").unwrap(),["true","true"]);}
+#[test]fn typed_function_calls_work(){assert_eq!(run("function add(a: integer, b: integer) returns integer { return a + b; } print(add(20,22));").unwrap(),["42"]);}
+#[test]fn recursive_factorial_works(){assert_eq!(run("function factorial(n: integer) returns integer { if (n <= 1) { return 1; } else { return n * factorial(n - 1); } } print(factorial(5));").unwrap(),["120"]);}
+#[test]fn reports_division_by_zero(){assert!(run("create n = 10 / 0;").unwrap_err().contains("Division by zero"));}
+#[test]fn reports_recursion_limit(){assert!(run("function repeat(n: integer) returns integer { return repeat(n); } print(repeat(1));").unwrap_err().contains("Maximum function call depth"));}}

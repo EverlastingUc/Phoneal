@@ -1,4 +1,4 @@
-let greeting = "Hello from Phoneal!";
-let answer = 6 * 7;
+create greeting = "Hello from Phoneal!";
+create answer = 6 * 7;
 print(greeting);
 print(answer);

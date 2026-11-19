@@ -4,29 +4,26 @@ Phoneal currently uses a Rust-hosted compile-and-interpret pipeline:
 
 ```text
 .phnl source
-    -> Lexer (tokens with line/column)
-    -> Recursive-descent Parser (AST)
-    -> Semantic Analysis (lexical scopes, typed function signatures, arity, return paths, primitive types)
-    -> Interpreter (checked i64 arithmetic, lexical environments, function call frames)
+    -> Lexer (English keywords, comments, escapes, source locations)
+    -> Recursive-descent Parser (AST, precedence, functions, branches)
+    -> Semantic Analysis (scopes, primitive types, signatures, branch return paths)
+    -> Interpreter (checked arithmetic, short-circuit logic, function frames)
 ```
 
-## Scope and call-frame invariants
+## Current invariants
 
-- The global program scope exists for the entire execution.
-- Every block pushes one new scope and always pops it on normal completion or return/error propagation.
-- Name lookup searches from the innermost scope outwards.
-- A declaration initializer is evaluated before the new name is inserted.
+- Parsing completes before semantic analysis and execution.
 - Same-scope redeclaration is rejected; nested shadowing is permitted.
-- Function calls create a fresh parameter scope and do not inherit caller-local scopes.
-- The current global scope is copied into a function call frame, so global bindings available at call time can be read.
-- Function return values unwind nested blocks and terminate the current call.
-- Active function calls are limited to 128 to bound stack growth.
+- Declaration initializers are evaluated before inserting the new binding.
+- Function calls use a fresh parameter scope and do not inherit caller-local variables.
+- Function signatures are collected before body analysis, allowing forward references and recursion.
+- Function returns unwind through nested blocks and selected conditional branches.
+- Non-boolean conditional expressions are rejected statically.
+- `and` and `or` short-circuit at runtime.
+- A non-unit function is accepted only when every reachable branch returns a value.
+- Integer arithmetic uses checked operations.
+- Active function calls are limited to 128.
 
-## Compiler invariants
+## Not yet a security boundary
 
-- Parsing must finish before semantic analysis begins.
-- A duplicate declaration never replaces the first declaration.
-- Semantic analysis accumulates independent diagnostics instead of stopping at the first one.
-- Runtime arithmetic uses checked integer operations; debug/release overflow behavior must not change language semantics.
-
-The AST is currently shared between parsing, semantic analysis, and interpretation. A future typed intermediate representation should be introduced before bytecode generation; the AST should not become the VM instruction format.
+The current Rust interpreter does not isolate untrusted programs from host resources. It has no bytecode verifier, capability enforcement, instruction budget, memory quota, or sandbox process boundary. These are future engineering milestones, not implied by the current compiler pipeline.

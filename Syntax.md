@@ -1,6 +1,6 @@
 # Phoneal Syntax Reference
 
-**Status:** Language-design baseline for the next implementation phase  
+**Status:** Canonical language design; implementation status is tracked at the end of this document  
 **File extension:** `.phnl`  
 **Pronunciation:** Pho-ni-yal
 
@@ -410,10 +410,10 @@ A word becomes reserved in the implementation only when its syntax is supported 
 
 ## 17. Implementation status
 
-At the repository baseline used to start this specification, the Rust prototype supports only a subset of the design:
+The current Rust prototype implements the following subset of this specification:
 
-- Implemented: integer and string literals, `let`, `print`, arithmetic `+`/ `-`/ `*`/ `/`, blocks, typed top-level `fn` functions, calls, returns, lexical scopes, static checks, source-located diagnostics.
-- Not yet implemented at that baseline: the new English spellings, booleans, comparisons, logical operators, conditionals, loops, mutable assignment, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
+- Implemented: `create`, `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, and escaped strings.
+- Not yet implemented: mutable assignment, loops, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
 - Explicitly deferred by project owner: Package Manager, Standard Library, and self-hosting compiler.
 
-This list must be updated as each feature lands. Documentation must never mark a feature complete before its end-to-end tests pass.
+The Package Manager, Standard Library, and self-hosting compiler are explicitly deferred by the project owner. This list must be updated as each feature lands. Documentation must never mark a feature complete before its end-to-end tests pass.

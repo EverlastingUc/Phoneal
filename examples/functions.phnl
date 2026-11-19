@@ -1,18 +1,9 @@
-fn add(a: integer, b: integer) -> integer {
-    return a + b;
-}
-
-fn square(value: integer) -> integer {
-    return value * value;
-}
-
-fn greet(name: string) -> string {
-    return "Hello, " + name;
-}
-
-let answer = add(20, 22);
-let area = square(7);
-let message = greet("Phoneal");
+function add(a: integer, b: integer) returns integer { return a + b; }
+function square(value: integer) returns integer { return value * value; }
+function greet(name: text) returns text { return "Hello, " + name; }
+create answer = add(20, 22);
+create area = square(7);
+create message = greet("Phoneal");
 print(answer);
 print(area);
 print(message);

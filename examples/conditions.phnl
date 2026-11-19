@@ -1,0 +1,12 @@
+create age = 20;
+create has_permission = true;
+if (age >= 18 and has_permission) {
+    print("Access granted");
+} else {
+    print("Access denied");
+}
+if (not has_permission or age < 18) {
+    print("Restricted");
+} else {
+    print("Ready");
+}

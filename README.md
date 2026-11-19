@@ -1,47 +1,53 @@
 # Phoneal
 
 **Pronunciation:** Pho-ni-yal  
-**Source extension:** .phnl  
-**Status:** Early experimental Rust-hosted prototype
+**Source extension:** `.phnl`  
+**Status:** Experimental Rust-hosted language prototype
 
-Phoneal is an experimental security-first, general-purpose programming language. Its long-term goals include memory safety, explicit capabilities, sandboxed execution, and verifiable security properties.
+Phoneal is a security-first, general-purpose programming language project. The design prioritizes readable English-oriented syntax, static checking, explicit capabilities, and eventually sandboxed execution.
 
 ## Current implementation
 
-The Rust prototype includes a hand-written lexer, recursive-descent parser, arithmetic expressions, immutable `let` declarations, `print(...)` statements, nested lexical blocks, and user-defined functions. Functions support typed positional parameters, calls, expression returns, nested calls, and recursion with a bounded call depth. The semantic pass checks variable names, function existence, argument counts, argument types, return types, and guaranteed returns.
+- `create` declarations and `print(...)`
+- `integer`, `text`, and `boolean` primitive types
+- Arithmetic, comparisons, and English logical operators (`and`, `or`, `not`)
+- `if` / `else if` / `else` with boolean-only conditions
+- Nested lexical scopes
+- Typed top-level `function` declarations using `returns`
+- Function calls, recursion, and control-flow-aware return checking
+- Source-located lexer, parser, semantic, and runtime diagnostics
+- Comments and escaped string literals
 
-The current primitive types are `integer` and `string`. Integer arithmetic is checked for overflow and division by zero; strings support concatenation with `+`. Nested blocks create lexical scopes with controlled shadowing.
-
-Functions must annotate each parameter and return type as `integer` or `string`. Function bodies can access the global scope as it exists when called, but do not capture caller-local variables.
-
-This is not yet a bytecode compiler, sandbox, or production-ready secure language. Lexing and parsing still stop at the first error.
+```phoneal
+function factorial(number: integer) returns integer {
+    if (number <= 1) { return 1; }
+    else { return number * factorial(number - 1); }
+}
+print(factorial(5));
+```
 
 ## Run
 
     cargo run -- run examples/hello.phnl
-    cargo run -- run examples/strings.phnl
-    cargo run -- run examples/scopes.phnl
-    cargo run -- run examples/functions.phnl
+    cargo run -- run examples/conditions.phnl
+    cargo run -- run examples/factorial.phnl
     cargo run -- check examples/functions.phnl
     cargo test
 
-## Compiler pipeline
+## Pipeline
 
-    Source -> Lexer -> Parser -> Semantic Analysis -> Interpreter
+    Source -> Lexer -> Parser -> Semantic Analysis -> Rust Interpreter
 
-## Project documents
+This is still an interpreter prototype. It is not a bytecode compiler, virtual machine, or sandbox. Do not execute untrusted Phoneal programs with it.
 
+## Documentation
+
+- [Complete syntax design and implementation status](Syntax.md)
 - [Implemented language subset](LANGUAGE_SPEC.md)
 - [Compiler architecture](docs/architecture.md)
 - [Diagnostic behavior](docs/diagnostics.md)
 - [Security limitations](SECURITY.md)
 
-## Roadmap
+## Deferred by project owner
 
-1. Parser recovery and complete source spans.
-2. Typed function signatures and return-path analysis.
-3. Typed intermediate representation.
-4. Bytecode generation and verification.
-5. Restricted Rust-based virtual machine.
-6. Capability-based permissions and sandboxing.
-7. Self-hosting after the language and bootstrap process stabilize.
+Package Manager, Standard Library, and self-hosting compiler are intentionally excluded until the language, VM, and sandbox foundations are ready.

@@ -1,9 +1,9 @@
-let message = "outer";
+create message = "outer";
 {
-    let message = "inner";
+    create message = "inner";
     print(message);
     {
-        let depth = 2;
+        create depth = 2;
         print(depth);
     }
 }
