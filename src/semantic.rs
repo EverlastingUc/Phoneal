@@ -357,11 +357,16 @@ mod tests {
     }
     #[test]
     fn accepts_matching_explicit_variable_type() {
-        assert!(analyze(&parse("create age: integer = 18; create name: text = \"Ever\"; create ready: boolean = true;" )).is_ok());
+        assert!(analyze(&parse(
+            "create age: integer = 18; create name: text = \"Ever\"; create ready: boolean = true;"
+        ))
+        .is_ok());
     }
     #[test]
     fn rejects_mismatched_explicit_variable_type() {
-        assert!(analyze_all(&parse("create age: integer = \"eighteen\";" )).iter().any(|d| d.message.contains("declared as integer")));
+        assert!(analyze_all(&parse("create age: integer = \"eighteen\";"))
+            .iter()
+            .any(|d| d.message.contains("declared as integer")));
     }
     #[test]
     fn accepts_boolean_condition_and_comparison() {
