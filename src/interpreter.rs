@@ -240,7 +240,9 @@ fn execute_statements(
                 out.push(v.to_string());
             }
             Statement::Return { value, .. } => {
-                return Ok(Some(evaluate_expression(value, env, funcs, out, depth, steps)?))
+                return Ok(Some(evaluate_expression(
+                    value, env, funcs, out, depth, steps,
+                )?))
             }
             Statement::Function { .. } => {}
             Statement::Block { statements, .. } => {
