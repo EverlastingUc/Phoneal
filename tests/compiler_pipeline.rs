@@ -89,7 +89,7 @@ fn semantic_analysis_rejects_duplicate_parameter_names() {
 
 #[test]
 fn semantic_analysis_rejects_nested_function_declarations() {
-    let errors = compile_with_diagnostics("{ fn nested() { return 1; } }").unwrap_err();
+    let errors = compile_with_diagnostics("{ fn nested() -> integer { return 1; } }").unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("top level")));
