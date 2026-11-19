@@ -70,9 +70,10 @@ fn nested_calls_work_in_variable_initializers() {
 
 #[test]
 fn semantic_analysis_rejects_duplicate_function_names() {
-    let errors =
-        compile_with_diagnostics("function f() returns integer { return 1; } function f() returns integer { return 2; }")
-            .unwrap_err();
+    let errors = compile_with_diagnostics(
+        "function f() returns integer { return 1; } function f() returns integer { return 2; }",
+    )
+    .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("already declared")));
@@ -80,8 +81,10 @@ fn semantic_analysis_rejects_duplicate_function_names() {
 
 #[test]
 fn semantic_analysis_rejects_duplicate_parameter_names() {
-    let errors = compile_with_diagnostics("function f(x: integer, x: integer) returns integer { return x; }")
-        .unwrap_err();
+    let errors = compile_with_diagnostics(
+        "function f(x: integer, x: integer) returns integer { return x; }",
+    )
+    .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("Duplicate parameter")));
@@ -89,7 +92,8 @@ fn semantic_analysis_rejects_duplicate_parameter_names() {
 
 #[test]
 fn semantic_analysis_rejects_nested_function_declarations() {
-    let errors = compile_with_diagnostics("{ function nested() returns integer { return 1; } }").unwrap_err();
+    let errors = compile_with_diagnostics("{ function nested() returns integer { return 1; } }")
+        .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("top level")));
@@ -124,7 +128,8 @@ fn semantic_analysis_rejects_wrong_function_arity() {
 
 #[test]
 fn function_without_return_is_rejected_during_analysis() {
-    let errors = compile_with_diagnostics("function empty() returns integer { create value = 1; }").unwrap_err();
+    let errors = compile_with_diagnostics("function empty() returns integer { create value = 1; }")
+        .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("does not return")));
@@ -132,8 +137,9 @@ fn function_without_return_is_rejected_during_analysis() {
 
 #[test]
 fn recursive_calls_are_bounded() {
-    let error = run("function repeat(n: integer) returns integer { return repeat(n); } print(repeat(1));")
-        .unwrap_err();
+    let error =
+        run("function repeat(n: integer) returns integer { return repeat(n); } print(repeat(1));")
+            .unwrap_err();
     assert!(error.message.contains("Maximum function call depth"));
 }
 
@@ -230,7 +236,8 @@ fn compiler_rejects_wrong_function_return_type() {
 
 #[test]
 fn compiler_rejects_functions_without_guaranteed_return() {
-    let errors = compile_with_diagnostics("function invalid() returns integer { create x = 1; }").unwrap_err();
+    let errors = compile_with_diagnostics("function invalid() returns integer { create x = 1; }")
+        .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("does not return")));
@@ -238,26 +245,50 @@ fn compiler_rejects_functions_without_guaranteed_return() {
 
 #[test]
 fn compiler_accepts_return_inside_unconditional_nested_block() {
-    assert!(compile_with_diagnostics("function valid() returns integer { { return 42; } }").is_ok());
+    assert!(
+        compile_with_diagnostics("function valid() returns integer { { return 42; } }").is_ok()
+    );
 }
 
 #[test]
 fn typed_recursive_call_type_is_known_during_analysis() {
-    assert!(
-        compile_with_diagnostics("function recurse(n: integer) returns integer { return recurse(n); }")
-            .is_ok()
-    );
+    assert!(compile_with_diagnostics(
+        "function recurse(n: integer) returns integer { return recurse(n); }"
+    )
+    .is_ok());
 }
 
 #[test]
 fn compiler_rejects_unknown_type_names() {
     let errors =
-        compile_with_diagnostics("function f(value: decimal) returns integer { return 1; }").unwrap_err();
+        compile_with_diagnostics("function f(value: decimal) returns integer { return 1; }")
+            .unwrap_err();
     assert!(errors[0].message.contains("Unknown type"));
 }
 
-#[test]fn boolean_conditions_and_short_circuit_execute_end_to_end(){assert_eq!(run("create age = 20; if (age >= 18 and true) { print(\"adult\"); } else { print(\"minor\"); } if (false and missing == 1) { print(\"wrong\"); } else { print(\"short-circuited\"); }").unwrap(),["adult","short-circuited"]);}
-#[test]fn recursive_factorial_executes_with_if_else(){assert_eq!(run("function factorial(n: integer) returns integer { if (n <= 1) { return 1; } else { return n * factorial(n - 1); } } print(factorial(5));").unwrap(),["120"]);}
-#[test]fn function_return_analysis_requires_both_if_branches(){assert!(compile_with_diagnostics("function choose(flag: boolean) returns integer { if (flag) { return 1; } else { return 2; } }").is_ok());assert!(compile_with_diagnostics("function choose(flag: boolean) returns integer { if (flag) { return 1; } }").is_err());}
-#[test]fn rejects_integer_as_boolean_condition(){let errors=compile_with_diagnostics("if (42) { print(1); }").unwrap_err();assert!(errors.iter().any(|e|e.message.contains("must be boolean")));}
-#[test]fn old_abbreviated_syntax_is_not_accepted(){assert!(compile_with_diagnostics("let value = 1;").is_err());assert!(compile_with_diagnostics("fn value() -> integer { return 1; }").is_err());}
+#[test]
+fn boolean_conditions_and_short_circuit_execute_end_to_end() {
+    assert_eq!(run("create age = 20; if (age >= 18 and true) { print(\"adult\"); } else { print(\"minor\"); } if (false and missing == 1) { print(\"wrong\"); } else { print(\"short-circuited\"); }").unwrap(),["adult","short-circuited"]);
+}
+#[test]
+fn recursive_factorial_executes_with_if_else() {
+    assert_eq!(run("function factorial(n: integer) returns integer { if (n <= 1) { return 1; } else { return n * factorial(n - 1); } } print(factorial(5));").unwrap(),["120"]);
+}
+#[test]
+fn function_return_analysis_requires_both_if_branches() {
+    assert!(compile_with_diagnostics("function choose(flag: boolean) returns integer { if (flag) { return 1; } else { return 2; } }").is_ok());
+    assert!(compile_with_diagnostics(
+        "function choose(flag: boolean) returns integer { if (flag) { return 1; } }"
+    )
+    .is_err());
+}
+#[test]
+fn rejects_integer_as_boolean_condition() {
+    let errors = compile_with_diagnostics("if (42) { print(1); }").unwrap_err();
+    assert!(errors.iter().any(|e| e.message.contains("must be boolean")));
+}
+#[test]
+fn old_abbreviated_syntax_is_not_accepted() {
+    assert!(compile_with_diagnostics("let value = 1;").is_err());
+    assert!(compile_with_diagnostics("fn value() -> integer { return 1; }").is_err());
+}
