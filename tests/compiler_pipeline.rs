@@ -41,14 +41,14 @@ fn nested_block_diagnostics_keep_source_locations() {
 
 #[test]
 fn function_without_parameters_returns_a_value() {
-    let output = run("fn answer() { return 42; } print(answer());").unwrap();
+    let output = run("fn answer() -> integer { return 42; } print(answer());").unwrap();
     assert_eq!(output, ["42"]);
 }
 
 #[test]
 fn function_can_read_a_previously_declared_global() {
     let output =
-        run("let factor = 6; fn multiply(value) { return value * factor; } print(multiply(7));")
+        run("let factor = 6; fn multiply(value: integer) -> integer { return value * factor; } print(multiply(7));")
             .unwrap();
     assert_eq!(output, ["42"]);
 }
@@ -56,7 +56,7 @@ fn function_can_read_a_previously_declared_global() {
 #[test]
 fn function_parameters_shadow_global_names() {
     let output = run(
-        "let value = 100; fn identity(value) { return value; } print(identity(9)); print(value);",
+        "let value = 100; fn identity(value: integer) -> integer { return value; } print(identity(9)); print(value);",
     )
     .unwrap();
     assert_eq!(output, ["9", "100"]);
@@ -64,13 +64,13 @@ fn function_parameters_shadow_global_names() {
 
 #[test]
 fn nested_calls_work_in_variable_initializers() {
-    let output = run("fn inc(n) { return n + 1; } fn twice(n) { return n * 2; } let result = twice(inc(20)); print(result);").unwrap();
+    let output = run("fn inc(n: integer) -> integer { return n + 1; } fn twice(n: integer) -> integer { return n * 2; } let result = twice(inc(20)); print(result);").unwrap();
     assert_eq!(output, ["42"]);
 }
 
 #[test]
 fn semantic_analysis_rejects_duplicate_function_names() {
-    let errors = compile_with_diagnostics("fn f() { return 1; } fn f() { return 2; }").unwrap_err();
+    let errors = compile_with_diagnostics("fn f() -> integer { return 1; } fn f() -> integer { return 2; }").unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("already declared")));
@@ -78,7 +78,7 @@ fn semantic_analysis_rejects_duplicate_function_names() {
 
 #[test]
 fn semantic_analysis_rejects_duplicate_parameter_names() {
-    let errors = compile_with_diagnostics("fn f(x, x) { return x; }").unwrap_err();
+    let errors = compile_with_diagnostics("fn f(x: integer, x: integer) -> integer { return x; }").unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("Duplicate parameter")));
@@ -111,28 +111,28 @@ fn semantic_analysis_rejects_undefined_function() {
 #[test]
 fn semantic_analysis_rejects_wrong_function_arity() {
     let errors =
-        compile_with_diagnostics("fn add(a, b) { return a + b; } print(add(1));").unwrap_err();
+        compile_with_diagnostics("fn add(a: integer, b: integer) -> integer { return a + b; } print(add(1));").unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("expects 2 argument")));
 }
 
 #[test]
-fn function_without_return_fails_at_runtime() {
-    let error = run("fn empty() { let value = 1; } print(empty());").unwrap_err();
-    assert!(error.message.contains("without returning a value"));
+fn function_without_return_is_rejected_during_analysis() {
+    let errors = compile_with_diagnostics("fn empty() -> integer { let value = 1; }").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("does not return")));
 }
 
 #[test]
 fn recursive_calls_are_bounded() {
-    let error = run("fn repeat(n) { return repeat(n); } print(repeat(1));").unwrap_err();
+    let error = run("fn repeat(n: integer) -> integer { return repeat(n); } print(repeat(1));").unwrap_err();
     assert!(error.message.contains("Maximum function call depth"));
 }
 
 #[test]
 fn function_local_variables_do_not_escape() {
     let errors =
-        compile_with_diagnostics("fn make() { let hidden = 7; return hidden; } print(hidden);")
+        compile_with_diagnostics("fn make() -> integer { let hidden = 7; return hidden; } print(hidden);")
             .unwrap_err();
     assert!(errors
         .iter()

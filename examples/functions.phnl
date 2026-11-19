@@ -1,12 +1,18 @@
-fn add(a, b) {
+fn add(a: integer, b: integer) -> integer {
     return a + b;
 }
 
-fn square(value) {
+fn square(value: integer) -> integer {
     return value * value;
+}
+
+fn greet(name: string) -> string {
+    return "Hello, " + name;
 }
 
 let answer = add(20, 22);
 let area = square(7);
+let message = greet("Phoneal");
 print(answer);
 print(area);
+print(message);

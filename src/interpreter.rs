@@ -311,19 +311,19 @@ mod tests {
     #[test]
     fn executes_functions_and_returns_values() {
         let output =
-            run("fn add(a, b) { return a + b; } let result = add(20, 22); print(result);").unwrap();
+            run("fn add(a: integer, b: integer) -> integer { return a + b; } let result = add(20, 22); print(result);").unwrap();
         assert_eq!(output, ["42"]);
     }
 
     #[test]
     fn supports_nested_function_calls() {
-        let output = run("fn double(x) { return x * 2; } fn add(a, b) { return a + b; } print(add(double(5), double(6)));").unwrap();
+        let output = run("fn double(x: integer) -> integer { return x * 2; } fn add(a, b) { return a + b; } print(add(double(5), double(6)));").unwrap();
         assert_eq!(output, ["22"]);
     }
 
     #[test]
     fn rejects_runtime_call_depth_exhaustion() {
-        let source = "fn loop(n) { return loop(n); } print(loop(1));";
+        let source = "fn loop(n: integer) -> integer { return loop(n); } print(loop(1));";
         let error = run(source).unwrap_err();
         assert!(error.contains("Maximum function call depth"));
     }
