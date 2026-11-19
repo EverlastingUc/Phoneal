@@ -425,7 +425,7 @@ mod tests {
     #[test]
     fn rejects_excessively_nested_parentheses_without_panicking() {
         let source = format!(
-            "{}1{};",
+            "print({}1{});",
             "(".repeat(MAX_NESTING_DEPTH + 10),
             ")".repeat(MAX_NESTING_DEPTH + 10)
         );
