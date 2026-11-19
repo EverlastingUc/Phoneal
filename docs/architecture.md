@@ -24,7 +24,7 @@ Front-end admission limits: 1 MiB source, 100,000 tokens, and 256 nested grammar
 - `and` and `or` short-circuit at runtime.
 - A non-unit function is accepted only when every reachable branch returns a value.
 - Integer arithmetic uses checked operations.
-- Active function calls are limited to 128.
+- Active function calls are limited to 128. Every executed statement consumes one unit from a per-run 50,000-step budget; exceeding it returns a runtime diagnostic.
 - Source files, token streams, and recursive grammar nesting have explicit admission limits to avoid unbounded front-end growth.
 
 ## Not yet a security boundary

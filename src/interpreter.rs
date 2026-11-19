@@ -5,6 +5,8 @@ use crate::{
 };
 use std::collections::HashMap;
 const MAX_CALL_DEPTH: usize = 128;
+/// Maximum number of executed statements in one program run.
+pub const MAX_EXECUTION_STEPS: usize = 50_000;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Integer(i64),
@@ -81,7 +83,8 @@ pub fn evaluate(e: &Expression, env: &HashMap<String, Value>) -> Result<Value, D
     let scopes = vec![env.clone()];
     let mut out = Vec::new();
     let mut depth = 0;
-    evaluate_expression(e, &scopes, &HashMap::new(), &mut out, &mut depth)
+    let mut steps = 0;
+    evaluate_expression(e, &scopes, &HashMap::new(), &mut out, &mut depth, &mut steps)
 }
 fn evaluate_expression(
     e: &Expression,
@@ -89,6 +92,7 @@ fn evaluate_expression(
     funcs: &FunctionTable,
     out: &mut Vec<String>,
     depth: &mut usize,
+    steps: &mut usize,
 ) -> Result<Value, Diagnostic> {
     match e {
         Expression::Integer(v) => Ok(Value::Integer(*v)),
@@ -96,7 +100,7 @@ fn evaluate_expression(
         Expression::Boolean(v) => Ok(Value::Boolean(*v)),
         Expression::Variable { name, location } => lookup(env, name)
             .ok_or_else(|| runtime_error(format!("Undefined variable '{name}'"), location)),
-        Expression::Group(inner) => evaluate_expression(inner, env, funcs, out, depth),
+        Expression::Group(inner) => evaluate_expression(inner, env, funcs, out, depth, steps),
         Expression::Unary {
             operator,
             operator_location,
@@ -200,8 +204,13 @@ fn execute_statements(
     funcs: &FunctionTable,
     out: &mut Vec<String>,
     depth: &mut usize,
+    steps: &mut usize,
 ) -> Result<Option<Value>, Diagnostic> {
     for s in ss {
+        if *steps >= MAX_EXECUTION_STEPS {
+            return Err(Diagnostic::runtime(format!("Maximum execution step budget ({MAX_EXECUTION_STEPS}) exceeded")));
+        }
+        *steps += 1;
         match s {
             Statement::Let {
                 name,
@@ -285,7 +294,8 @@ pub fn execute(ss: &[Statement]) -> Result<Vec<String>, Diagnostic> {
     let mut env = vec![HashMap::new()];
     let mut out = Vec::new();
     let mut depth = 0;
-    match execute_statements(ss, &mut env, &funcs, &mut out, &mut depth)? {
+    let mut steps = 0;
+    match execute_statements(ss, &mut env, &funcs, &mut out, &mut depth, &mut steps)? {
         Some(_) => Err(Diagnostic::runtime(
             "Return is only valid inside a function",
         )),

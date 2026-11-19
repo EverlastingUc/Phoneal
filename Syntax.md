@@ -410,13 +410,13 @@ A word becomes reserved in the implementation only when its syntax is supported 
 
 ## 17. Front-end resource limits
 
-The Rust prototype rejects source files larger than **1 MiB**, more than **100,000 non-EOF tokens**, and grammar recursion deeper than **256 nested levels**. These are defensive parser/lexer limits, not a sandbox or a complete denial-of-service defense. They do not yet bound total interpreter instructions, wall-clock time, heap usage, or output volume.
+The Rust prototype rejects source files larger than **1 MiB**, more than **100,000 non-EOF tokens**, and grammar recursion deeper than **256 nested levels**. Runtime function calls are limited to **128 active calls**, and each run is limited to **50,000 executed statements**. These are defensive resource limits, not a sandbox or a complete denial-of-service defense: they do not impose a wall-clock deadline, heap quota, or output quota.
 
 ## 18. Implementation status
 
 The current Rust prototype implements the following subset of this specification:
 
-- Implemented: `create`, `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits.
+- Implemented: `create`, `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits, call-depth limit, and per-run statement budget.
 - Not yet implemented: mutable assignment, loops, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
 - Explicitly deferred by project owner: Package Manager, Standard Library, and self-hosting compiler.
 
