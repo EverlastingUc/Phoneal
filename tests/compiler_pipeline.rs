@@ -14,7 +14,7 @@ fn runs_string_concatenation_program() {
 
 #[test]
 fn check_collects_name_and_type_errors_in_one_pass() {
-    let errors = compile_with_diagnostics("print(unknown); let bad = 1 + \"text\";").unwrap_err();
+    let errors = compile_with_diagnostics("print(unknown); create bad = 1 + \"text\";").unwrap_err();
     assert_eq!(errors.len(), 2);
     assert!(errors[0].message.contains("Undefined variable"));
     assert!(errors[1].message.contains("cannot be applied"));
@@ -28,7 +28,7 @@ fn valid_programs_are_accepted_by_check_pipeline() {
 #[test]
 fn lexical_shadowing_runs_end_to_end() {
     let output =
-        run("create color = \"blue\"; { let color = \"red\"; print(color); } print(color);")
+        run("create color = \"blue\"; { create color = \"red\"; print(color); } print(color);")
             .unwrap();
     assert_eq!(output, ["red", "blue"]);
 }
@@ -212,7 +212,7 @@ fn typed_functions_accept_matching_arguments_and_returns() {
 
 #[test]
 fn typed_string_functions_execute() {
-    assert_eq!(run("function greet(name: text) returns string { return \"Hello, \" + name; } print(greet(\"Phoneal\"));").unwrap(), ["Hello, Phoneal"]);
+    assert_eq!(run("function greet(name: text) returns text { return \"Hello, \" + name; } print(greet(\"Phoneal\"));").unwrap(), ["Hello, Phoneal"]);
 }
 
 #[test]
