@@ -132,7 +132,7 @@ impl Lexer {
                 '"' => {
                     let mut value = String::new();
                     let mut closed = false;
-                    while let Some(c) = self.peek() {
+                    while self.peek().is_some() {
                         match self.advance() {
                             '"' => {
                                 closed = true;

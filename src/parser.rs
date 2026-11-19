@@ -257,10 +257,7 @@ impl Parser {
         ops: &[TokenKind],
     ) -> Result<Expression, Diagnostic> {
         let mut e = lower(self)?;
-        loop {
-            let Some(op) = ops.iter().find(|op| **op == self.peek().kind).cloned() else {
-                break;
-            };
+        while let Some(op) = ops.iter().find(|op| **op == self.peek().kind).cloned() {
             let t = self.advance();
             let right = lower(self)?;
             e = Expression::Binary {
