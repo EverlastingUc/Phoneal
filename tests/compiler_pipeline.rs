@@ -70,7 +70,9 @@ fn nested_calls_work_in_variable_initializers() {
 
 #[test]
 fn semantic_analysis_rejects_duplicate_function_names() {
-    let errors = compile_with_diagnostics("fn f() -> integer { return 1; } fn f() -> integer { return 2; }").unwrap_err();
+    let errors =
+        compile_with_diagnostics("fn f() -> integer { return 1; } fn f() -> integer { return 2; }")
+            .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("already declared")));
@@ -78,7 +80,8 @@ fn semantic_analysis_rejects_duplicate_function_names() {
 
 #[test]
 fn semantic_analysis_rejects_duplicate_parameter_names() {
-    let errors = compile_with_diagnostics("fn f(x: integer, x: integer) -> integer { return x; }").unwrap_err();
+    let errors = compile_with_diagnostics("fn f(x: integer, x: integer) -> integer { return x; }")
+        .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("Duplicate parameter")));
@@ -110,8 +113,10 @@ fn semantic_analysis_rejects_undefined_function() {
 
 #[test]
 fn semantic_analysis_rejects_wrong_function_arity() {
-    let errors =
-        compile_with_diagnostics("fn add(a: integer, b: integer) -> integer { return a + b; } print(add(1));").unwrap_err();
+    let errors = compile_with_diagnostics(
+        "fn add(a: integer, b: integer) -> integer { return a + b; } print(add(1));",
+    )
+    .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("expects 2 argument")));
@@ -120,20 +125,24 @@ fn semantic_analysis_rejects_wrong_function_arity() {
 #[test]
 fn function_without_return_is_rejected_during_analysis() {
     let errors = compile_with_diagnostics("fn empty() -> integer { let value = 1; }").unwrap_err();
-    assert!(errors.iter().any(|error| error.message.contains("does not return")));
+    assert!(errors
+        .iter()
+        .any(|error| error.message.contains("does not return")));
 }
 
 #[test]
 fn recursive_calls_are_bounded() {
-    let error = run("fn repeat(n: integer) -> integer { return repeat(n); } print(repeat(1));").unwrap_err();
+    let error = run("fn repeat(n: integer) -> integer { return repeat(n); } print(repeat(1));")
+        .unwrap_err();
     assert!(error.message.contains("Maximum function call depth"));
 }
 
 #[test]
 fn function_local_variables_do_not_escape() {
-    let errors =
-        compile_with_diagnostics("fn make() -> integer { let hidden = 7; return hidden; } print(hidden);")
-            .unwrap_err();
+    let errors = compile_with_diagnostics(
+        "fn make() -> integer { let hidden = 7; return hidden; } print(hidden);",
+    )
+    .unwrap_err();
     assert!(errors
         .iter()
         .any(|error| error.message.contains("Undefined variable 'hidden'")));
