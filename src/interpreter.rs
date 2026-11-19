@@ -132,11 +132,17 @@ fn evaluate_expression(
             match operator {
                 TokenKind::And => match (l, r) {
                     (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a && b)),
-                    _ => Err(runtime_error("Logical operator requires boolean operands", operator_location)),
+                    _ => Err(runtime_error(
+                        "Logical operator requires boolean operands",
+                        operator_location,
+                    )),
                 },
                 TokenKind::Or => match (l, r) {
                     (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a || b)),
-                    _ => Err(runtime_error("Logical operator requires boolean operands", operator_location)),
+                    _ => Err(runtime_error(
+                        "Logical operator requires boolean operands",
+                        operator_location,
+                    )),
                 },
                 _ => apply_binary(l, operator, r, operator_location),
             }
