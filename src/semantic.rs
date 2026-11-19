@@ -8,9 +8,15 @@ use crate::{
 /// Validates declaration and variable-use rules before interpretation.
 ///
 /// The current language has one program-wide scope. A declaration becomes
-/// visible only after its initializer has been validated.
+/// visible only after its initializer has been checked.
 pub fn analyze(statements: &[Statement]) -> Result<(), Diagnostic> {
+    analyze_all(statements).into_result()
+}
+
+/// Runs semantic analysis and returns every independent diagnostic found.
+pub fn analyze_all(statements: &[Statement]) -> DiagnosticSet {
     let mut declared = HashSet::new();
+    let mut diagnostics = Vec::new();
 
     for statement in statements {
         match statement {
@@ -20,7 +26,7 @@ pub fn analyze(statements: &[Statement]) -> Result<(), Diagnostic> {
                 value,
             } => {
                 if declared.contains(name) {
-                    return Err(Diagnostic::at(
+                    diagnostics.push(Diagnostic::at(
                         DiagnosticStage::Semantic,
                         format!("Variable '{name}' is already declared"),
                         name_location.line,
@@ -28,40 +34,73 @@ pub fn analyze(statements: &[Statement]) -> Result<(), Diagnostic> {
                     ));
                 }
 
-                validate_expression(value, &declared)?;
+                validate_expression(value, &declared, &mut diagnostics);
+
+                // Keep the first declaration authoritative. A duplicate must
+                // never replace the symbol already present in this scope.
                 declared.insert(name.clone());
             }
             Statement::Print(expression) => {
-                validate_expression(expression, &declared)?;
+                validate_expression(expression, &declared, &mut diagnostics);
             }
         }
     }
 
-    Ok(())
+    DiagnosticSet { diagnostics }
+}
+
+/// A collection of diagnostics produced by one analysis pass.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DiagnosticSet {
+    diagnostics: Vec<Diagnostic>,
+}
+
+impl DiagnosticSet {
+    pub fn is_empty(&self) -> bool {
+        self.diagnostics.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.diagnostics.len()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Diagnostic> {
+        self.diagnostics.iter()
+    }
+
+    pub fn into_vec(self) -> Vec<Diagnostic> {
+        self.diagnostics
+    }
+
+    pub fn into_result(self) -> Result<(), Diagnostic> {
+        match self.diagnostics.into_iter().next() {
+            Some(diagnostic) => Err(diagnostic),
+            None => Ok(()),
+        }
+    }
 }
 
 fn validate_expression(
     expression: &Expression,
     declared: &HashSet<String>,
-) -> Result<(), Diagnostic> {
+    diagnostics: &mut Vec<Diagnostic>,
+) {
     match expression {
-        Expression::Integer(_) | Expression::String(_) => Ok(()),
+        Expression::Integer(_) | Expression::String(_) => {}
         Expression::Variable { name, location } => {
-            if declared.contains(name) {
-                Ok(())
-            } else {
-                Err(Diagnostic::at(
+            if !declared.contains(name) {
+                diagnostics.push(Diagnostic::at(
                     DiagnosticStage::Semantic,
                     format!("Undefined variable '{name}'"),
                     location.line,
                     location.column,
-                ))
+                ));
             }
         }
-        Expression::Group(inner) => validate_expression(inner, declared),
+        Expression::Group(inner) => validate_expression(inner, declared, diagnostics),
         Expression::Binary { left, right, .. } => {
-            validate_expression(left, declared)?;
-            validate_expression(right, declared)
+            validate_expression(left, declared, diagnostics);
+            validate_expression(right, declared, diagnostics);
         }
     }
 }
@@ -138,5 +177,41 @@ mod tests {
 
         assert_eq!(error.message, "Undefined variable 'known'");
         assert_eq!(error.location.unwrap().column, 8);
+    }
+
+    #[test]
+    fn reports_multiple_independent_semantic_errors() {
+        let result = analyze_all(&statements(
+            "print(first); let value = missing + other; print(last);",
+        ));
+
+        assert_eq!(result.len(), 4);
+        let messages: Vec<_> = result.iter().map(|item| item.message.as_str()).collect();
+        assert_eq!(
+            messages,
+            [
+                "Undefined variable 'first'",
+                "Undefined variable 'missing'",
+                "Undefined variable 'other'",
+                "Undefined variable 'last'",
+            ]
+        );
+    }
+
+    #[test]
+    fn duplicate_declaration_does_not_hide_initializer_errors() {
+        let result = analyze_all(&statements(
+            "let value = 1; let value = missing; print(value);",
+        ));
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(
+            result.iter().next().unwrap().message,
+            "Variable 'value' is already declared"
+        );
+        assert_eq!(
+            result.iter().nth(1).unwrap().message,
+            "Undefined variable 'missing'"
+        );
     }
 }

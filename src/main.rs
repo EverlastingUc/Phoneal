@@ -26,10 +26,12 @@ fn main() {
     });
 
     if arguments[1] == "check" {
-        match phoneal::compile(&source) {
-            Ok(_) => println!("Syntax OK: {file_path}"),
-            Err(error) => {
-                eprintln!("Phoneal: {error}");
+        match phoneal::compile_with_diagnostics(&source) {
+            Ok(_) => println!("Syntax and semantic checks passed: {file_path}"),
+            Err(diagnostics) => {
+                for diagnostic in diagnostics {
+                    eprintln!("Phoneal: {diagnostic}");
+                }
                 process::exit(1);
             }
         }
