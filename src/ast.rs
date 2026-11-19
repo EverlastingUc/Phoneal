@@ -4,10 +4,8 @@ use crate::{diagnostic::SourceLocation, token::TokenKind};
 pub enum Expression {
     Integer(i64),
     String(String),
-    Variable {
-        name: String,
-        location: SourceLocation,
-    },
+    Variable { name: String, location: SourceLocation },
+    Call { name: String, location: SourceLocation, arguments: Vec<Expression> },
     Binary {
         left: Box<Expression>,
         operator: TokenKind,
@@ -19,14 +17,14 @@ pub enum Expression {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    Let {
+    Let { name: String, name_location: SourceLocation, value: Expression },
+    Print(Expression),
+    Return { value: Expression, location: SourceLocation },
+    Function {
         name: String,
         name_location: SourceLocation,
-        value: Expression,
+        parameters: Vec<(String, SourceLocation)>,
+        body: Vec<Statement>,
     },
-    Print(Expression),
-    Block {
-        statements: Vec<Statement>,
-        location: SourceLocation,
-    },
+    Block { statements: Vec<Statement>, location: SourceLocation },
 }

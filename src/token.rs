@@ -2,6 +2,8 @@
 pub enum TokenKind {
     Let,
     Print,
+    Fn,
+    Return,
     Identifier(String),
     Integer(i64),
     String(String),
@@ -14,6 +16,7 @@ pub enum TokenKind {
     RightParen,
     LeftBrace,
     RightBrace,
+    Comma,
     Semicolon,
     Eof,
 }

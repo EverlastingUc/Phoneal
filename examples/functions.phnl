@@ -1,0 +1,12 @@
+fn add(a, b) {
+    return a + b;
+}
+
+fn square(value) {
+    return value * value;
+}
+
+let answer = add(20, 22);
+let area = square(7);
+print(answer);
+print(area);

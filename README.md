@@ -8,9 +8,11 @@ Phoneal is an experimental security-first, general-purpose programming language.
 
 ## Current implementation
 
-The Rust prototype includes a hand-written lexer, recursive-descent parser, arithmetic expressions, immutable `let` declarations, `print(...)` statements, and nested lexical blocks. The semantic pass checks variable declarations, undefined names, and primitive expression types before execution. It can report multiple independent semantic diagnostics in one pass.
+The Rust prototype includes a hand-written lexer, recursive-descent parser, arithmetic expressions, immutable `let` declarations, `print(...)` statements, nested lexical blocks, and user-defined functions. Functions support positional parameters, calls, expression returns, nested calls, and recursion with a bounded call depth. The semantic pass checks variable names, function existence, argument counts, and primitive expression types.
 
 The current primitive types are `integer` and `string`. Integer arithmetic is checked for overflow and division by zero; strings support concatenation with `+`. Nested blocks create lexical scopes with controlled shadowing.
+
+Function parameter and return types are not yet declared or statically inferred across function boundaries. Function bodies can access the global scope as it exists when called, but do not capture caller-local variables.
 
 This is not yet a bytecode compiler, sandbox, or production-ready secure language. Lexing and parsing still stop at the first error.
 
@@ -19,8 +21,8 @@ This is not yet a bytecode compiler, sandbox, or production-ready secure languag
     cargo run -- run examples/hello.phnl
     cargo run -- run examples/strings.phnl
     cargo run -- run examples/scopes.phnl
-    cargo run -- check examples/hello.phnl
-    cargo run -- check examples/type_error.phnl
+    cargo run -- run examples/functions.phnl
+    cargo run -- check examples/functions.phnl
     cargo test
 
 ## Compiler pipeline
@@ -37,7 +39,7 @@ This is not yet a bytecode compiler, sandbox, or production-ready secure languag
 ## Roadmap
 
 1. Parser recovery and complete source spans.
-2. Function declarations, parameters, calls, and return checking.
+2. Typed function signatures and return-path analysis.
 3. Typed intermediate representation.
 4. Bytecode generation and verification.
 5. Restricted Rust-based virtual machine.
