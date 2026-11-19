@@ -104,10 +104,16 @@ impl Analyzer {
                     body,
                 } => {
                     if self.scopes.len() != 1 {
-                        self.report("Function declarations must be at top level".to_owned(), name_location);
+                        self.report(
+                            "Function declarations must be at top level".to_owned(),
+                            name_location,
+                        );
                     }
                     if !self.seen_functions.insert(name.clone()) {
-                        self.report(format!("Function '{name}' is already declared"), name_location);
+                        self.report(
+                            format!("Function '{name}' is already declared"),
+                            name_location,
+                        );
                     }
                     if parameters
                         .iter()
