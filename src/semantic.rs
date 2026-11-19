@@ -153,9 +153,7 @@ fn infer_expression(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        compile, diagnostic::DiagnosticStage, lexer::Lexer, parser::Parser,
-    };
+    use crate::{compile, diagnostic::DiagnosticStage, lexer::Lexer, parser::Parser};
 
     fn statements(source: &str) -> Vec<Statement> {
         Parser::new(Lexer::new(source).scan().unwrap())

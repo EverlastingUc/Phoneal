@@ -1,12 +1,7 @@
 use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DiagnosticStage {
-    Lexing,
-    Parsing,
-    Semantic,
-    Runtime,
-}
+pub enum DiagnosticStage { Lexing, Parsing, Semantic, Runtime }
 
 impl fmt::Display for DiagnosticStage {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -20,10 +15,7 @@ impl fmt::Display for DiagnosticStage {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SourceLocation {
-    pub line: usize,
-    pub column: usize,
-}
+pub struct SourceLocation { pub line: usize, pub column: usize }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Diagnostic {
@@ -34,24 +26,11 @@ pub struct Diagnostic {
 
 impl Diagnostic {
     pub fn new(stage: DiagnosticStage, message: impl Into<String>) -> Self {
-        Self {
-            stage,
-            message: message.into(),
-            location: None,
-        }
+        Self { stage, message: message.into(), location: None }
     }
 
-    pub fn at(
-        stage: DiagnosticStage,
-        message: impl Into<String>,
-        line: usize,
-        column: usize,
-    ) -> Self {
-        Self {
-            stage,
-            message: message.into(),
-            location: Some(SourceLocation { line, column }),
-        }
+    pub fn at(stage: DiagnosticStage, message: impl Into<String>, line: usize, column: usize) -> Self {
+        Self { stage, message: message.into(), location: Some(SourceLocation { line, column }) }
     }
 
     pub fn lexical(message: impl Into<String>, line: usize, column: usize) -> Self {
@@ -62,19 +41,12 @@ impl Diagnostic {
         Self::at(DiagnosticStage::Parsing, message, line, column)
     }
 
-    pub fn semantic(message: impl Into<String>) -> Self {
-        Self::new(DiagnosticStage::Semantic, message)
-    }
-
-    pub fn runtime(message: impl Into<String>) -> Self {
-        Self::new(DiagnosticStage::Runtime, message)
-    }
+    pub fn semantic(message: impl Into<String>) -> Self { Self::new(DiagnosticStage::Semantic, message) }
+    pub fn runtime(message: impl Into<String>) -> Self { Self::new(DiagnosticStage::Runtime, message) }
 
     /// Renders a diagnostic with the offending source line and a character-aware caret.
     pub fn render(&self, source: &str) -> String {
-        let Some(location) = &self.location else {
-            return self.to_string();
-        };
+        let Some(location) = &self.location else { return self.to_string(); };
         let Some(line_text) = source.lines().nth(location.line.saturating_sub(1)) else {
             return self.to_string();
         };
@@ -84,16 +56,8 @@ impl Diagnostic {
         let caret_padding = " ".repeat(column.saturating_sub(1));
         format!(
             "{} error: {}\n --> {}:{}\n{:>width$} |\n{} | {}\n{:>width$} | {}^",
-            self.stage,
-            self.message,
-            line_number,
-            column,
-            "",
-            line_number,
-            line_text,
-            "",
-            caret_padding,
-            width = gutter_width
+            self.stage, self.message, line_number, column, "", line_number, line_text, "",
+            caret_padding, width = gutter_width
         )
     }
 }

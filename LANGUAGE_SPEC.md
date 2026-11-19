@@ -6,7 +6,7 @@ This document records the implemented subset. It is not a promise that syntax is
 
 - Keywords: `let`, `print`
 - Identifiers: ASCII letters or underscore followed by ASCII letters, digits, or underscores
-- Integer literals: non-negative values in the signed 64-bit range; negative values are not yet expressible as literals
+- Integer literals: signed 64-bit range (negative values currently use unary-free arithmetic syntax)
 - String literals: double-quoted, single-line strings
 - Operators: `=`, `+`, `-`, `*`, `/`
 - Delimiters: `(`, `)`, `;`
