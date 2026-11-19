@@ -1,8 +1,0 @@
-# Mutable values must be declared explicitly.
-create mutable score = 10;
-set score = score + 5;
-print(score);
-
-# Immutable values remain read-only.
-create label = "Phoneal";
-print(label);

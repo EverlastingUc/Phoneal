@@ -17,6 +17,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Function calls, recursion, and control-flow-aware return checking
 - Source-located lexer, parser, semantic, and runtime diagnostics
 - Comments and escaped string literals
+- CI-verified executable examples (see `examples/README.md`)
 - Front-end input limits: 1 MiB source, 100,000 tokens, and 256 nested grammar levels
 
 ```phoneal
@@ -34,6 +35,7 @@ print(factorial(5));
     cargo run -- run examples/factorial.phnl
     cargo run -- check examples/functions.phnl
     cargo test
+    bash scripts/check_examples.sh
 
 ## Pipeline
 
