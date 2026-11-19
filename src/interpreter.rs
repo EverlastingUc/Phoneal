@@ -106,7 +106,7 @@ fn evaluate_expression(
             operator_location,
             operand,
         } => {
-            let v = evaluate_expression(operand, env, funcs, out, depth)?;
+            let v = evaluate_expression(operand, env, funcs, out, depth, steps)?;
             match (operator, v) {
                 (TokenKind::Not, Value::Boolean(b)) => Ok(Value::Boolean(!b)),
                 (TokenKind::Minus, Value::Integer(i)) => i
@@ -125,14 +125,14 @@ fn evaluate_expression(
             operator_location,
             right,
         } => {
-            let l = evaluate_expression(left, env, funcs, out, depth)?;
+            let l = evaluate_expression(left, env, funcs, out, depth, steps)?;
             if *operator == TokenKind::And && l == Value::Boolean(false) {
                 return Ok(Value::Boolean(false));
             }
             if *operator == TokenKind::Or && l == Value::Boolean(true) {
                 return Ok(Value::Boolean(true));
             }
-            let r = evaluate_expression(right, env, funcs, out, depth)?;
+            let r = evaluate_expression(right, env, funcs, out, depth, steps)?;
             match operator {
                 TokenKind::And => match (l, r) {
                     (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a && b)),
@@ -177,7 +177,7 @@ fn evaluate_expression(
             }
             let mut vals = Vec::new();
             for a in arguments {
-                vals.push(evaluate_expression(a, env, funcs, out, depth)?);
+                vals.push(evaluate_expression(a, env, funcs, out, depth, steps)?);
             }
             let globals = env.first().cloned().unwrap_or_default();
             let mut local = HashMap::new();
@@ -186,7 +186,7 @@ fn evaluate_expression(
             }
             let mut call_env = vec![globals, local];
             *depth += 1;
-            let result = execute_statements(&f.body, &mut call_env, funcs, out, depth);
+            let result = execute_statements(&f.body, &mut call_env, funcs, out, depth, steps);
             *depth -= 1;
             match result? {
                 Some(v) => Ok(v),
@@ -223,20 +223,20 @@ fn execute_statements(
                         name_location,
                     ));
                 }
-                let v = evaluate_expression(value, env, funcs, out, depth)?;
+                let v = evaluate_expression(value, env, funcs, out, depth, steps)?;
                 env.last_mut().unwrap().insert(name.clone(), v);
             }
             Statement::Print(e) => {
-                let v = evaluate_expression(e, env, funcs, out, depth)?;
+                let v = evaluate_expression(e, env, funcs, out, depth, steps)?;
                 out.push(v.to_string());
             }
             Statement::Return { value, .. } => {
-                return Ok(Some(evaluate_expression(value, env, funcs, out, depth)?))
+                return Ok(Some(evaluate_expression(value, env, funcs, out, depth, steps)?))
             }
             Statement::Function { .. } => {}
             Statement::Block { statements, .. } => {
                 env.push(HashMap::new());
-                let r = execute_statements(statements, env, funcs, out, depth);
+                let r = execute_statements(statements, env, funcs, out, depth, steps);
                 env.pop();
                 if let Some(v) = r? {
                     return Ok(Some(v));
@@ -248,7 +248,7 @@ fn execute_statements(
                 else_branch,
                 location,
             } => {
-                let c = evaluate_expression(condition, env, funcs, out, depth)?;
+                let c = evaluate_expression(condition, env, funcs, out, depth, steps)?;
                 let branch = match c {
                     Value::Boolean(true) => Some(then_branch),
                     Value::Boolean(false) => else_branch.as_ref(),
@@ -261,7 +261,7 @@ fn execute_statements(
                 };
                 if let Some(b) = branch {
                     env.push(HashMap::new());
-                    let r = execute_statements(b, env, funcs, out, depth);
+                    let r = execute_statements(b, env, funcs, out, depth, steps);
                     env.pop();
                     if let Some(v) = r? {
                         return Ok(Some(v));
@@ -357,3 +357,13 @@ mod tests {
         .contains("Maximum function call depth"));
     }
 }
+    #[test]
+    fn enforces_per_run_statement_budget() {
+        let repeated = "print(0);".repeat(400);
+        let source = format!(
+            "function repeat(n: integer) returns integer {{ if (n == 0) {{ return 0; }} repeat(n - 1); {repeated} return 0; }} print(repeat(127));"
+        );
+        let error = run(&source).unwrap_err();
+        assert!(error.contains("execution step budget"));
+    }
+
