@@ -14,7 +14,8 @@ fn runs_string_concatenation_program() {
 
 #[test]
 fn check_collects_name_and_type_errors_in_one_pass() {
-    let errors = compile_with_diagnostics("print(unknown); create bad = 1 + \"text\";").unwrap_err();
+    let errors =
+        compile_with_diagnostics("print(unknown); create bad = 1 + \"text\";").unwrap_err();
     assert_eq!(errors.len(), 2);
     assert!(errors[0].message.contains("Undefined variable"));
     assert!(errors[1].message.contains("cannot be applied"));
