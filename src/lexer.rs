@@ -121,7 +121,7 @@ mod tests {
         let tokens = Lexer::new("fn add(a, b) { return a + b; }").scan().unwrap();
         assert_eq!(tokens[0].kind, TokenKind::Fn);
         assert_eq!(tokens[4].kind, TokenKind::Comma);
-        assert_eq!(tokens[7].kind, TokenKind::Return);
+        assert_eq!(tokens[8].kind, TokenKind::Return);
     }
 
     #[test]

@@ -38,3 +38,120 @@ fn nested_block_diagnostics_keep_source_locations() {
     assert_eq!(errors.len(), 1);
     assert_eq!(errors[0].location.as_ref().unwrap().column, 9);
 }
+
+#[test]
+fn function_without_parameters_returns_a_value() {
+    let output = run("fn answer() { return 42; } print(answer());").unwrap();
+    assert_eq!(output, ["42"]);
+}
+
+#[test]
+fn function_can_read_a_previously_declared_global() {
+    let output = run("let factor = 6; fn multiply(value) { return value * factor; } print(multiply(7));").unwrap();
+    assert_eq!(output, ["42"]);
+}
+
+#[test]
+fn function_parameters_shadow_global_names() {
+    let output = run("let value = 100; fn identity(value) { return value; } print(identity(9)); print(value);").unwrap();
+    assert_eq!(output, ["9", "100"]);
+}
+
+#[test]
+fn nested_calls_work_in_variable_initializers() {
+    let output = run("fn inc(n) { return n + 1; } fn twice(n) { return n * 2; } let result = twice(inc(20)); print(result);").unwrap();
+    assert_eq!(output, ["42"]);
+}
+
+#[test]
+fn semantic_analysis_rejects_duplicate_function_names() {
+    let errors = compile_with_diagnostics("fn f() { return 1; } fn f() { return 2; }").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("already declared")));
+}
+
+#[test]
+fn semantic_analysis_rejects_duplicate_parameter_names() {
+    let errors = compile_with_diagnostics("fn f(x, x) { return x; }").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("Duplicate parameter")));
+}
+
+#[test]
+fn semantic_analysis_rejects_nested_function_declarations() {
+    let errors = compile_with_diagnostics("{ fn nested() { return 1; } }").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("top level")));
+}
+
+#[test]
+fn semantic_analysis_rejects_return_outside_function() {
+    let errors = compile_with_diagnostics("return 42;").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("only valid inside")));
+}
+
+#[test]
+fn semantic_analysis_rejects_undefined_function() {
+    let errors = compile_with_diagnostics("print(missing(1));").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("Undefined function")));
+}
+
+#[test]
+fn semantic_analysis_rejects_wrong_function_arity() {
+    let errors = compile_with_diagnostics("fn add(a, b) { return a + b; } print(add(1));").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("expects 2 argument")));
+}
+
+#[test]
+fn function_without_return_fails_at_runtime() {
+    let error = run("fn empty() { let value = 1; } print(empty());").unwrap_err();
+    assert!(error.message.contains("without returning a value"));
+}
+
+#[test]
+fn recursive_calls_are_bounded() {
+    let error = run("fn repeat(n) { return repeat(n); } print(repeat(1));").unwrap_err();
+    assert!(error.message.contains("Maximum function call depth"));
+}
+
+#[test]
+fn function_local_variables_do_not_escape() {
+    let errors = compile_with_diagnostics("fn make() { let hidden = 7; return hidden; } print(hidden);").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("Undefined variable 'hidden'")));
+}
+
+#[test]
+fn arithmetic_precedence_is_preserved() {
+    assert_eq!(run("print(2 + 3 * 4);").unwrap(), ["14"]);
+}
+
+#[test]
+fn string_concatenation_is_preserved() {
+    assert_eq!(run("print(\"Phone\" + \"al\");").unwrap(), ["Phoneal"]);
+}
+
+#[test]
+fn duplicate_variable_declarations_are_rejected() {
+    let errors = compile_with_diagnostics("let x = 1; let x = 2;").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("already declared")));
+}
+
+#[test]
+fn block_local_variables_do_not_escape() {
+    let errors = compile_with_diagnostics("{ let local = 1; } print(local);").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("Undefined variable")));
+}
+
+#[test]
+fn integer_overflow_is_reported_at_runtime() {
+    let error = run("print(9223372036854775807 + 1);").unwrap_err();
+    assert!(error.message.contains("Integer overflow"));
+}
+
+#[test]
+fn division_by_zero_is_reported_at_runtime() {
+    let error = run("print(10 / 0);").unwrap_err();
+    assert!(error.message.contains("Division by zero"));
+}
+
+#[test]
+fn nested_scopes_can_read_outer_bindings() {
+    assert_eq!(run("let base = 40; { let answer = base + 2; print(answer); }").unwrap(), ["42"]);
+}

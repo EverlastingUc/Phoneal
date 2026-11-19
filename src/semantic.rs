@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     ast::{Expression, Statement},
@@ -17,6 +17,7 @@ pub fn analyze_all(statements: &[Statement]) -> DiagnosticSet {
     let mut analyzer = Analyzer {
         scopes: vec![HashMap::new()],
         functions: collect_functions(statements),
+        seen_functions: HashSet::new(),
         diagnostics: Vec::new(),
         in_function: false,
     };
@@ -42,6 +43,7 @@ fn collect_functions(statements: &[Statement]) -> FunctionTable {
 struct Analyzer {
     scopes: Vec<HashMap<String, Option<PhonealType>>>,
     functions: FunctionTable,
+    seen_functions: HashSet<String>,
     diagnostics: Vec<Diagnostic>,
     in_function: bool,
 }
@@ -101,6 +103,12 @@ impl Analyzer {
                     parameters,
                     body,
                 } => {
+                    if self.scopes.len() != 1 {
+                        self.report("Function declarations must be at top level".to_owned(), name_location);
+                    }
+                    if !self.seen_functions.insert(name.clone()) {
+                        self.report(format!("Function '{name}' is already declared"), name_location);
+                    }
                     if parameters
                         .iter()
                         .enumerate()
