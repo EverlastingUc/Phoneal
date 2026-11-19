@@ -317,7 +317,7 @@ mod tests {
 
     #[test]
     fn supports_nested_function_calls() {
-        let output = run("fn double(x: integer) -> integer { return x * 2; } fn add(a, b) { return a + b; } print(add(double(5), double(6)));").unwrap();
+        let output = run("fn double(x: integer) -> integer { return x * 2; } fn add(a: integer, b: integer) -> integer { return a + b; } print(add(double(5), double(6)));").unwrap();
         assert_eq!(output, ["22"]);
     }
 
