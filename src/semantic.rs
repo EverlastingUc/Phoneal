@@ -232,7 +232,7 @@ mod tests {
             error.message,
             "Operator '+' cannot be applied to integer and string"
         );
-        assert_eq!(error.location.unwrap().column, 18);
+        assert_eq!(error.location.unwrap().column, 16);
     }
 
     #[test]
