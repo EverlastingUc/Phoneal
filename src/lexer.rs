@@ -52,6 +52,8 @@ impl Lexer {
                 '/' => TokenKind::Slash,
                 '(' => TokenKind::LeftParen,
                 ')' => TokenKind::RightParen,
+                '{' => TokenKind::LeftBrace,
+                '}' => TokenKind::RightBrace,
                 ';' => TokenKind::Semicolon,
                 '"' => {
                     let mut value = String::new();
@@ -132,6 +134,13 @@ mod tests {
         assert_eq!(tokens[1].kind, TokenKind::Identifier("count".to_owned()));
         assert_eq!(tokens[3].kind, TokenKind::Integer(42));
         assert_eq!(tokens[4].kind, TokenKind::Semicolon);
+    }
+
+    #[test]
+    fn scans_block_delimiters() {
+        let tokens = Lexer::new("{ let x = 1; }").scan().unwrap();
+        assert_eq!(tokens[0].kind, TokenKind::LeftBrace);
+        assert_eq!(tokens[5].kind, TokenKind::RightBrace);
     }
 
     #[test]

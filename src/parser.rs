@@ -71,6 +71,10 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Result<Statement, Diagnostic> {
+        if self.take(&TokenKind::LeftBrace) {
+            return self.parse_block();
+        }
+
         if self.take(&TokenKind::Let) {
             let token = self.advance();
             let name_location = SourceLocation {
@@ -110,10 +114,29 @@ impl Parser {
 
         let token = self.peek();
         Err(Diagnostic::parsing(
-            "Expected let or print",
+            "Expected let, print, or block",
             token.line,
             token.column,
         ))
+    }
+
+    fn parse_block(&mut self) -> Result<Statement, Diagnostic> {
+        let opening = &self.tokens[self.position - 1];
+        let location = SourceLocation {
+            line: opening.line,
+            column: opening.column,
+        };
+        let mut statements = Vec::new();
+
+        while !matches!(self.peek().kind, TokenKind::RightBrace | TokenKind::Eof) {
+            statements.push(self.parse_statement()?);
+        }
+
+        self.require(&TokenKind::RightBrace, "Expected '}' to close block")?;
+        Ok(Statement::Block {
+            statements,
+            location,
+        })
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Diagnostic> {
@@ -227,6 +250,31 @@ mod tests {
         };
 
         assert_eq!(evaluate(value, &HashMap::new()).unwrap().to_string(), "14");
+    }
+
+    #[test]
+    fn parses_nested_blocks() {
+        let source = "{ let outer = 1; { let inner = 2; print(inner); } print(outer); }";
+        let statements = Parser::new(Lexer::new(source).scan().unwrap())
+            .parse()
+            .unwrap();
+        assert!(matches!(statements[0], Statement::Block { .. }));
+    }
+
+    #[test]
+    fn rejects_unclosed_block_at_end_of_file() {
+        let error = Parser::new(Lexer::new("{ let x = 1;").scan().unwrap())
+            .parse()
+            .unwrap_err();
+        assert!(error.message.contains("Expected '}'"));
+    }
+
+    #[test]
+    fn rejects_unexpected_closing_brace() {
+        let error = Parser::new(Lexer::new("}").scan().unwrap())
+            .parse()
+            .unwrap_err();
+        assert!(error.message.contains("Expected let, print, or block"));
     }
 
     #[test]

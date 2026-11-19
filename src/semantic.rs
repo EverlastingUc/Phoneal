@@ -7,46 +7,140 @@ use crate::{
     types::PhonealType,
 };
 
-/// Validates names and expression types before interpretation.
-/// The current language has one program-wide scope.
+/// Validates names and expression types using nested lexical scopes.
 pub fn analyze(statements: &[Statement]) -> Result<(), Diagnostic> {
     analyze_all(statements).into_result()
 }
 
 /// Runs semantic analysis and returns every independent diagnostic found.
 pub fn analyze_all(statements: &[Statement]) -> DiagnosticSet {
-    let mut symbols: HashMap<String, Option<PhonealType>> = HashMap::new();
-    let mut diagnostics = Vec::new();
+    let mut analyzer = Analyzer {
+        scopes: vec![HashMap::new()],
+        diagnostics: Vec::new(),
+    };
+    analyzer.analyze_statements(statements);
+    DiagnosticSet {
+        diagnostics: analyzer.diagnostics,
+    }
+}
 
-    for statement in statements {
-        match statement {
-            Statement::Let {
-                name,
-                name_location,
-                value,
-            } => {
-                let already_declared = symbols.contains_key(name);
-                if already_declared {
-                    diagnostics.push(Diagnostic::at(
-                        DiagnosticStage::Semantic,
-                        format!("Variable '{name}' is already declared"),
-                        name_location.line,
-                        name_location.column,
-                    ));
-                }
+struct Analyzer {
+    scopes: Vec<HashMap<String, Option<PhonealType>>>,
+    diagnostics: Vec<Diagnostic>,
+}
 
-                let inferred = infer_expression(value, &symbols, &mut diagnostics);
-                if !already_declared {
-                    symbols.insert(name.clone(), inferred);
+impl Analyzer {
+    fn analyze_statements(&mut self, statements: &[Statement]) {
+        for statement in statements {
+            match statement {
+                Statement::Let {
+                    name,
+                    name_location,
+                    value,
+                } => {
+                    let current_scope = self.scopes.last().expect("scope stack is never empty");
+                    let already_declared = current_scope.contains_key(name);
+                    if already_declared {
+                        self.diagnostics.push(Diagnostic::at(
+                            DiagnosticStage::Semantic,
+                            format!("Variable '{name}' is already declared in this scope"),
+                            name_location.line,
+                            name_location.column,
+                        ));
+                    }
+
+                    let inferred = self.infer_expression(value);
+                    if !already_declared {
+                        self.scopes
+                            .last_mut()
+                            .expect("scope stack is never empty")
+                            .insert(name.clone(), inferred);
+                    }
                 }
-            }
-            Statement::Print(expression) => {
-                infer_expression(expression, &symbols, &mut diagnostics);
+                Statement::Print(expression) => {
+                    self.infer_expression(expression);
+                }
+                Statement::Block { statements, .. } => {
+                    self.scopes.push(HashMap::new());
+                    self.analyze_statements(statements);
+                    self.scopes.pop();
+                }
             }
         }
     }
 
-    DiagnosticSet { diagnostics }
+    fn lookup(&self, name: &str) -> Option<Option<PhonealType>> {
+        self.scopes
+            .iter()
+            .rev()
+            .find_map(|scope| scope.get(name).copied())
+    }
+
+    fn infer_expression(&mut self, expression: &Expression) -> Option<PhonealType> {
+        match expression {
+            Expression::Integer(_) => Some(PhonealType::Integer),
+            Expression::String(_) => Some(PhonealType::String),
+            Expression::Variable { name, location } => match self.lookup(name) {
+                Some(value_type) => value_type,
+                None => {
+                    self.diagnostics.push(Diagnostic::at(
+                        DiagnosticStage::Semantic,
+                        format!("Undefined variable '{name}'"),
+                        location.line,
+                        location.column,
+                    ));
+                    None
+                }
+            },
+            Expression::Group(inner) => self.infer_expression(inner),
+            Expression::Binary {
+                left,
+                operator,
+                operator_location,
+                right,
+            } => {
+                let left_type = self.infer_expression(left);
+                let right_type = self.infer_expression(right);
+                let (Some(left_type), Some(right_type)) = (left_type, right_type) else {
+                    return None;
+                };
+
+                let result = match (operator, left_type, right_type) {
+                    (TokenKind::Plus, PhonealType::Integer, PhonealType::Integer) => {
+                        Some(PhonealType::Integer)
+                    }
+                    (TokenKind::Plus, PhonealType::String, PhonealType::String) => {
+                        Some(PhonealType::String)
+                    }
+                    (
+                        TokenKind::Minus | TokenKind::Star | TokenKind::Slash,
+                        PhonealType::Integer,
+                        PhonealType::Integer,
+                    ) => Some(PhonealType::Integer),
+                    _ => None,
+                };
+
+                if result.is_none() {
+                    let symbol = match operator {
+                        TokenKind::Plus => "+",
+                        TokenKind::Minus => "-",
+                        TokenKind::Star => "*",
+                        TokenKind::Slash => "/",
+                        _ => "?",
+                    };
+                    self.diagnostics.push(Diagnostic::at(
+                        DiagnosticStage::Semantic,
+                        format!(
+                            "Operator '{symbol}' cannot be applied to {left_type} and {right_type}"
+                        ),
+                        operator_location.line,
+                        operator_location.column,
+                    ));
+                }
+                result
+            }
+        }
+    }
 }
 
 /// A collection of diagnostics produced by one analysis pass.
@@ -76,76 +170,6 @@ impl DiagnosticSet {
         match self.diagnostics.into_iter().next() {
             Some(diagnostic) => Err(diagnostic),
             None => Ok(()),
-        }
-    }
-}
-
-fn infer_expression(
-    expression: &Expression,
-    symbols: &HashMap<String, Option<PhonealType>>,
-    diagnostics: &mut Vec<Diagnostic>,
-) -> Option<PhonealType> {
-    match expression {
-        Expression::Integer(_) => Some(PhonealType::Integer),
-        Expression::String(_) => Some(PhonealType::String),
-        Expression::Variable { name, location } => match symbols.get(name) {
-            Some(value_type) => *value_type,
-            None => {
-                diagnostics.push(Diagnostic::at(
-                    DiagnosticStage::Semantic,
-                    format!("Undefined variable '{name}'"),
-                    location.line,
-                    location.column,
-                ));
-                None
-            }
-        },
-        Expression::Group(inner) => infer_expression(inner, symbols, diagnostics),
-        Expression::Binary {
-            left,
-            operator,
-            operator_location,
-            right,
-        } => {
-            let left_type = infer_expression(left, symbols, diagnostics);
-            let right_type = infer_expression(right, symbols, diagnostics);
-            let (Some(left_type), Some(right_type)) = (left_type, right_type) else {
-                return None;
-            };
-
-            let result = match (operator, left_type, right_type) {
-                (TokenKind::Plus, PhonealType::Integer, PhonealType::Integer) => {
-                    Some(PhonealType::Integer)
-                }
-                (TokenKind::Plus, PhonealType::String, PhonealType::String) => {
-                    Some(PhonealType::String)
-                }
-                (
-                    TokenKind::Minus | TokenKind::Star | TokenKind::Slash,
-                    PhonealType::Integer,
-                    PhonealType::Integer,
-                ) => Some(PhonealType::Integer),
-                _ => None,
-            };
-
-            if result.is_none() {
-                let symbol = match operator {
-                    TokenKind::Plus => "+",
-                    TokenKind::Minus => "-",
-                    TokenKind::Star => "*",
-                    TokenKind::Slash => "/",
-                    _ => "?",
-                };
-                diagnostics.push(Diagnostic::at(
-                    DiagnosticStage::Semantic,
-                    format!(
-                        "Operator '{symbol}' cannot be applied to {left_type} and {right_type}"
-                    ),
-                    operator_location.line,
-                    operator_location.column,
-                ));
-            }
-            result
         }
     }
 }
@@ -180,7 +204,10 @@ mod tests {
     #[test]
     fn rejects_duplicate_declarations_at_second_name() {
         let error = analyze(&statements("let value = 1; let value = 2;")).unwrap_err();
-        assert_eq!(error.message, "Variable 'value' is already declared");
+        assert_eq!(
+            error.message,
+            "Variable 'value' is already declared in this scope"
+        );
         assert_eq!(error.location.unwrap().column, 20);
     }
 
@@ -217,7 +244,7 @@ mod tests {
         assert_eq!(result.len(), 2);
         assert_eq!(
             result.iter().next().unwrap().message,
-            "Variable 'value' is already declared"
+            "Variable 'value' is already declared in this scope"
         );
         assert_eq!(
             result.iter().nth(1).unwrap().message,
@@ -254,5 +281,34 @@ mod tests {
     fn compile_runs_type_analysis_before_execution() {
         let error = compile("print(1 + \"wrong\");").unwrap_err();
         assert_eq!(error.stage, DiagnosticStage::Semantic);
+    }
+
+    #[test]
+    fn allows_shadowing_in_nested_scope() {
+        assert!(analyze(&statements(
+            "let value = 1; { let value = \"inner\"; print(value); } print(value);"
+        ))
+        .is_ok());
+    }
+
+    #[test]
+    fn rejects_duplicate_names_inside_same_block() {
+        let error = analyze(&statements("{ let item = 1; let item = 2; }")).unwrap_err();
+        assert!(error.message.contains("already declared in this scope"));
+    }
+
+    #[test]
+    fn block_local_name_does_not_escape_scope() {
+        let result = analyze_all(&statements("{ let hidden = 1; } print(hidden);"));
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.iter().next().unwrap().message, "Undefined variable 'hidden'");
+    }
+
+    #[test]
+    fn nested_blocks_resolve_outer_variables() {
+        assert!(analyze(&statements(
+            "let outer = 1; { { print(outer); } }"
+        ))
+        .is_ok());
     }
 }

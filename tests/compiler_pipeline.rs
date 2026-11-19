@@ -24,3 +24,19 @@ fn check_collects_name_and_type_errors_in_one_pass() {
 fn valid_programs_are_accepted_by_check_pipeline() {
     assert!(compile_with_diagnostics("let count = 10 / 2; print(count);").is_ok());
 }
+
+#[test]
+fn lexical_shadowing_runs_end_to_end() {
+    let output = run(
+        "let color = \"blue\"; { let color = \"red\"; print(color); } print(color);",
+    )
+    .unwrap();
+    assert_eq!(output, ["red", "blue"]);
+}
+
+#[test]
+fn nested_block_diagnostics_keep_source_locations() {
+    let errors = compile_with_diagnostics("{ print(unknown); }").unwrap_err();
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0].location.as_ref().unwrap().column, 9);
+}

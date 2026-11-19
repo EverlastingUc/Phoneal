@@ -25,4 +25,8 @@ pub enum Statement {
         value: Expression,
     },
     Print(Expression),
+    Block {
+        statements: Vec<Statement>,
+        location: SourceLocation,
+    },
 }

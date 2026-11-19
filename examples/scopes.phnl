@@ -1,0 +1,10 @@
+let message = "outer";
+{
+    let message = "inner";
+    print(message);
+    {
+        let depth = 2;
+        print(depth);
+    }
+}
+print(message);

@@ -85,10 +85,20 @@ pub fn evaluate(
     }
 }
 
-pub fn execute(statements: &[Statement]) -> Result<Vec<String>, Diagnostic> {
-    let mut environment = HashMap::new();
-    let mut output = Vec::new();
+type Environment = Vec<HashMap<String, Value>>;
 
+fn lookup(environment: &Environment, name: &str) -> Option<Value> {
+    environment
+        .iter()
+        .rev()
+        .find_map(|scope| scope.get(name).cloned())
+}
+
+fn execute_statements(
+    statements: &[Statement],
+    environment: &mut Environment,
+    output: &mut Vec<String>,
+) -> Result<(), Diagnostic> {
     for statement in statements {
         match statement {
             Statement::Let {
@@ -96,22 +106,87 @@ pub fn execute(statements: &[Statement]) -> Result<Vec<String>, Diagnostic> {
                 name_location,
                 value,
             } => {
-                if environment.contains_key(name) {
+                let current_scope = environment.last().expect("scope stack is never empty");
+                if current_scope.contains_key(name) {
                     return Err(runtime_error(
-                        format!("Variable '{name}' already declared"),
+                        format!("Variable '{name}' already declared in this scope"),
                         name_location,
                     ));
                 }
 
-                let evaluated = evaluate(value, &environment)?;
-                environment.insert(name.clone(), evaluated);
+                let evaluated = evaluate_in_scope(value, environment)?;
+                environment
+                    .last_mut()
+                    .expect("scope stack is never empty")
+                    .insert(name.clone(), evaluated);
             }
             Statement::Print(expression) => {
-                output.push(evaluate(expression, &environment)?.to_string());
+                output.push(evaluate_in_scope(expression, environment)?.to_string());
+            }
+            Statement::Block { statements, .. } => {
+                environment.push(HashMap::new());
+                let result = execute_statements(statements, environment, output);
+                environment.pop();
+                result?;
             }
         }
     }
 
+    Ok(())
+}
+
+fn evaluate_in_scope(
+    expression: &Expression,
+    environment: &Environment,
+) -> Result<Value, Diagnostic> {
+    match expression {
+        Expression::Variable { name, location } => lookup(environment, name)
+            .ok_or_else(|| runtime_error(format!("Undefined variable '{name}'"), location)),
+        Expression::Group(inner) => evaluate_in_scope(inner, environment),
+        Expression::Binary {
+            left,
+            operator,
+            operator_location,
+            right,
+        } => {
+            let left_value = evaluate_in_scope(left, environment)?;
+            let right_value = evaluate_in_scope(right, environment)?;
+            let failure = |message: &str| runtime_error(message, operator_location);
+
+            match (left_value, operator, right_value) {
+                (Value::Integer(left), TokenKind::Plus, Value::Integer(right)) => left
+                    .checked_add(right)
+                    .map(Value::Integer)
+                    .ok_or_else(|| failure("Integer overflow")),
+                (Value::Integer(left), TokenKind::Minus, Value::Integer(right)) => left
+                    .checked_sub(right)
+                    .map(Value::Integer)
+                    .ok_or_else(|| failure("Integer overflow")),
+                (Value::Integer(left), TokenKind::Star, Value::Integer(right)) => left
+                    .checked_mul(right)
+                    .map(Value::Integer)
+                    .ok_or_else(|| failure("Integer overflow")),
+                (Value::Integer(_), TokenKind::Slash, Value::Integer(0)) => {
+                    Err(failure("Division by zero"))
+                }
+                (Value::Integer(left), TokenKind::Slash, Value::Integer(right)) => left
+                    .checked_div(right)
+                    .map(Value::Integer)
+                    .ok_or_else(|| failure("Integer overflow")),
+                (Value::String(left), TokenKind::Plus, Value::String(right)) => {
+                    Ok(Value::String(left + &right))
+                }
+                _ => Err(failure("Operator used with incompatible types")),
+            }
+        }
+        Expression::Integer(_) | Expression::String(_) => evaluate(expression, &HashMap::new()),
+    }
+}
+
+pub fn execute(statements: &[Statement]) -> Result<Vec<String>, Diagnostic> {
+    let mut environment = vec![HashMap::new()];
+    let mut output = Vec::new();
+    execute_statements(statements, &mut environment, &mut output)?;
     Ok(output)
 }
 
@@ -176,5 +251,32 @@ mod tests {
     fn concatenates_strings() {
         let output = run("let message = \"Phone\" + \"al\"; print(message);").unwrap();
         assert_eq!(output, vec!["Phoneal"]);
+    }
+
+    #[test]
+    fn nested_blocks_create_and_remove_scopes() {
+        let output = run(
+            "let item = 1; { let item = 2; { let item = 3; print(item); } print(item); } print(item);",
+        )
+        .unwrap();
+        assert_eq!(output, ["3", "2", "1"]);
+    }
+
+    #[test]
+    fn block_variables_are_not_visible_after_block() {
+        let error = run("{ let hidden = 9; } print(hidden);").unwrap_err();
+        assert!(error.contains("Undefined variable 'hidden'"));
+    }
+
+    #[test]
+    fn outer_variables_are_visible_inside_blocks() {
+        let output = run("let base = 10; { let result = base + 2; print(result); }").unwrap();
+        assert_eq!(output, ["12"]);
+    }
+
+    #[test]
+    fn block_scope_is_restored_after_runtime_error() {
+        let error = run("{ let local = 1; print(1 / 0); }").unwrap_err();
+        assert!(error.contains("Division by zero"));
     }
 }

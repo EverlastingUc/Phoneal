@@ -12,6 +12,8 @@ pub enum TokenKind {
     Slash,
     LeftParen,
     RightParen,
+    LeftBrace,
+    RightBrace,
     Semicolon,
     Eof,
 }
