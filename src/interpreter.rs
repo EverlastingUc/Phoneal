@@ -21,7 +21,10 @@ impl std::fmt::Display for Value {
     }
 }
 
-fn runtime_error(message: impl Into<String>, location: &crate::diagnostic::SourceLocation) -> Diagnostic {
+fn runtime_error(
+    message: impl Into<String>,
+    location: &crate::diagnostic::SourceLocation,
+) -> Diagnostic {
     Diagnostic::at(
         DiagnosticStage::Runtime,
         message,

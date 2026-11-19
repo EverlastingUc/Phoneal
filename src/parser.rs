@@ -285,7 +285,7 @@ mod tests {
         assert_eq!(location.line, 1);
         assert_eq!(location.column, 14);
     }
-    
+
     #[test]
     fn preserves_binary_operator_source_location() {
         let statements = Parser::new(Lexer::new("let result = value / 2;").scan().unwrap())
@@ -295,8 +295,7 @@ mod tests {
             panic!("expected let statement");
         };
         let Expression::Binary {
-            operator_location,
-            ..
+            operator_location, ..
         } = value
         else {
             panic!("expected binary expression");
