@@ -7,6 +7,7 @@ examples=(
   examples/functions.phnl
   examples/scopes.phnl
   examples/strings.phnl
+  examples/mutable.phnl
 )
 for example in "${examples[@]}"; do
   echo "Checking executable example: $example"

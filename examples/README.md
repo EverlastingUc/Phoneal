@@ -17,7 +17,7 @@ intentionally invalid type-checking example is rejected.
 | `scopes.phnl` | Nested lexical scopes |
 | `strings.phnl` | Text values and concatenation |
 | `type_error.phnl` | An intentionally invalid program rejected by `check` |
+| `mutable.phnl` | Explicit mutable bindings and type-checked reassignment |
 
-Mutable assignment and loops are design targets, not implemented language features.
-They are deliberately not presented as runnable examples yet. See [Syntax.md](../Syntax.md)
+Loops remain a design target and are not implemented yet. Mutable assignment is implemented and demonstrated above. See [Syntax.md](../Syntax.md)
 for the authoritative implementation-status list.

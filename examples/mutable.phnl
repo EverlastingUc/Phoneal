@@ -1,0 +1,5 @@
+# Mutable bindings must be explicitly requested.
+create mutable score: integer = 0;
+set score = score + 10;
+set score = score + 5;
+print(score);
