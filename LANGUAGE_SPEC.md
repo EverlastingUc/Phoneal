@@ -13,6 +13,8 @@ The canonical syntax reference is [Syntax.md](Syntax.md).
 - Comparisons: `==`, `!=`, `<`, `<=`, `>`, `>=`
 - Logical operators: `and`, `or`, `not` with short-circuit evaluation
 - `if`, `else if`, and `else`, with boolean-only conditions
+- `while` loops with boolean-only conditions, including nested loops, `break`, and `continue`
+- Explicit mutable bindings (`create mutable`) and type-checked `set` assignment
 - Nested lexical scopes and shadowing
 - Typed function arguments, return checking, forward references, and recursion
 - Multi-error semantic diagnostics with source locations
@@ -30,4 +32,4 @@ print(factorial(5));
 
 ## Not implemented yet
 
-Mutable bindings and assignment, loops, decimals, lists, maps, user-defined types, exception handling, module imports, capability requests, bytecode, a virtual machine, and sandboxing remain future milestones. Package Manager, Standard Library, and self-hosting compiler are explicitly deferred.
+For-each loops, decimals, lists, maps, user-defined types, exception handling, module imports, capability requests, bytecode, a virtual machine, and sandboxing remain future milestones. Package Manager, Standard Library, and self-hosting compiler are explicitly deferred.

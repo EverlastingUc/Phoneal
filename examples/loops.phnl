@@ -1,0 +1,12 @@
+create mutable count: integer = 0;
+
+while (count < 6) {
+    set count = count + 1;
+    if (count == 2) {
+        continue;
+    }
+    if (count == 5) {
+        break;
+    }
+    print(count);
+}

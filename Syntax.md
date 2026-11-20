@@ -203,6 +203,8 @@ Conditions must evaluate to `boolean`. There is no implicit truthiness: integers
 
 ## 8. Loops
 
+The Rust prototype implements `while`, `break`, and `continue`. Loop conditions must be boolean, and each condition check consumes the shared execution-step budget.
+
 ### 8.1 While loop
 
 ```phoneal
@@ -214,7 +216,24 @@ while (count < 5) {
 }
 ```
 
-### 8.2 For-each loop
+### 8.2 Loop control
+
+```phoneal
+create mutable number = 0;
+
+while (number < 10) {
+    set number = number + 1;
+    if (number == 3) { continue; }
+    if (number == 7) { break; }
+    print(number);
+}
+```
+
+`break` and `continue` are valid only inside loops and affect the nearest enclosing loop. A `return` inside a loop exits the function. Loop condition checks count against the interpreter's per-run execution budget.
+
+### 8.3 Future loop syntax
+
+A for-each loop is a design target, not implemented syntax:
 
 ```phoneal
 create numbers = [10, 20, 30];
@@ -223,24 +242,6 @@ for number in numbers {
     print(number);
 }
 ```
-
-### 8.3 Loop control
-
-```phoneal
-for number in numbers {
-    if (number == 20) {
-        continue;
-    }
-
-    if (number == 30) {
-        break;
-    }
-
-    print(number);
-}
-```
-
-`break` and `continue` are valid only inside loops. Loop execution must be subject to sandbox instruction/time limits.
 
 ## 9. Functions
 
@@ -415,14 +416,14 @@ A word becomes reserved in the implementation only when its syntax is supported 
 
 ## 17. Front-end resource limits
 
-The Rust prototype rejects source files larger than **1 MiB**, more than **100,000 non-EOF tokens**, and grammar recursion deeper than **256 nested levels**. Runtime function calls are limited to **128 active calls**, and each run is limited to **50,000 executed statements**. These are defensive resource limits, not a sandbox or a complete denial-of-service defense: they do not impose a wall-clock deadline, heap quota, or output quota.
+The Rust prototype rejects source files larger than **1 MiB**, more than **100,000 non-EOF tokens**, and grammar recursion deeper than **256 nested levels**. Runtime function calls are limited to **128 active calls**, and each run is limited to **50,000 execution steps**. Every executed statement and every `while` condition check consumes one step. These are defensive resource limits, not a sandbox or a complete denial-of-service defense: they do not impose a wall-clock deadline, heap quota, or output quota.
 
 ## 18. Implementation status
 
 The current Rust prototype implements the following subset of this specification:
 
-- Implemented: `create` (with optional `mutable` and optional `: integer`, `: text`, or `: boolean` annotations), `set` assignment with mutability and type checks, `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits, call-depth limit, and per-run statement budget.
-- Not yet implemented: loops, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
+- Implemented: `create` (with optional `mutable` and optional `: integer`, `: text`, or `: boolean` annotations), `set` assignment with mutability and type checks, `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, `while`, `break`, `continue`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits, call-depth limit, and per-run execution-step budget.
+- Not yet implemented: for-each loops, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
 - Explicitly deferred by project owner: Package Manager, Standard Library, and self-hosting compiler.
 
 The Package Manager, Standard Library, and self-hosting compiler are explicitly deferred by the project owner. This list must be updated as each feature lands. Documentation must never mark a feature complete before its end-to-end tests pass.

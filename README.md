@@ -11,14 +11,15 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - `create` declarations with inferred or explicit primitive types (`create age: integer = 18;`), explicit mutable bindings (`create mutable score = 0;`), checked `set` assignment, and `print(...)`
 - `integer`, `text`, and `boolean` primitive types
 - Arithmetic, comparisons, and English logical operators (`and`, `or`, `not`)
-- `if` / `else if` / `else` with boolean-only conditions
+- `if` / `else if` / `else` and `while` with boolean-only conditions
+- Nested loops with `break` and `continue
 - Nested lexical scopes
 - Typed top-level `function` declarations using `returns`
 - Function calls, recursion, and control-flow-aware return checking
 - Source-located lexer, parser, semantic, and runtime diagnostics
 - Comments and escaped string literals
 - CI-verified executable examples (see `examples/README.md`)
-- Resource limits: 1 MiB source, 100,000 tokens, 256 nested grammar levels, 128 active calls, and 50,000 executed statements per run
+- Resource limits: 1 MiB source, 100,000 tokens, 256 nested grammar levels, 128 active calls, and 50,000 execution steps per run (including loop condition checks)
 
 ```phoneal
 function factorial(number: integer) returns integer {
@@ -33,6 +34,7 @@ print(factorial(5));
     cargo run -- run examples/hello.phnl
     cargo run -- run examples/conditions.phnl
     cargo run -- run examples/factorial.phnl
+    cargo run -- run examples/loops.phnl
     cargo run -- check examples/functions.phnl
     cargo test
     bash scripts/check_examples.sh

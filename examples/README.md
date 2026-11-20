@@ -18,6 +18,7 @@ intentionally invalid type-checking example is rejected.
 | `strings.phnl` | Text values and concatenation |
 | `type_error.phnl` | An intentionally invalid program rejected by `check` |
 | `mutable.phnl` | Explicit mutable bindings and type-checked reassignment |
+| `loops.phnl` | Bounded while loops, `break`, and `continue` |
 
-Loops remain a design target and are not implemented yet. Mutable assignment is implemented and demonstrated above. See [Syntax.md](../Syntax.md)
+Mutable assignment and while-loop control flow are implemented and demonstrated above. For-each loops remain a design target. See [Syntax.md](../Syntax.md)
 for the authoritative implementation-status list.
