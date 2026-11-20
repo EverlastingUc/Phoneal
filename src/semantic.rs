@@ -12,7 +12,10 @@ struct FunctionSignature {
 }
 type FunctionTable = HashMap<String, FunctionSignature>;
 #[derive(Clone, Copy)]
-struct BindingInfo { ty: Option<PhonealType>, mutable: bool }
+struct BindingInfo {
+    ty: Option<PhonealType>,
+    mutable: bool,
+}
 pub fn analyze(statements: &[Statement]) -> Result<(), Diagnostic> {
     analyze_all(statements).into_result()
 }
@@ -88,17 +91,40 @@ impl Analyzer {
                     }
                     let ty = declared_type.map(Some).unwrap_or(inferred);
                     if !dup {
-                        self.scopes.last_mut().unwrap().insert(name.clone(), BindingInfo { ty, mutable: *mutable });
+                        self.scopes.last_mut().unwrap().insert(
+                            name.clone(),
+                            BindingInfo {
+                                ty,
+                                mutable: *mutable,
+                            },
+                        );
                     }
                 }
-                Statement::Assign { name, location, value } => {
+                Statement::Assign {
+                    name,
+                    location,
+                    value,
+                } => {
                     let actual = self.infer_expression(value);
                     match self.lookup(name) {
-                        None => self.report(format!("Cannot assign to undefined variable '{name}'"), location),
+                        None => self.report(
+                            format!("Cannot assign to undefined variable '{name}'"),
+                            location,
+                        ),
                         Some(binding) => {
-                            if !binding.mutable { self.report(format!("Cannot assign to immutable variable '{name}'"), location); }
+                            if !binding.mutable {
+                                self.report(
+                                    format!("Cannot assign to immutable variable '{name}'"),
+                                    location,
+                                );
+                            }
                             if let (Some(expected), Some(actual)) = (binding.ty, actual) {
-                                if expected != actual { self.report(format!("Assignment to '{name}' expects {expected}, received {actual}"), location); }
+                                if expected != actual {
+                                    self.report(
+                                        format!("Assignment to '{name}' expects {expected}, received {actual}"),
+                                        location,
+                                    );
+                                }
                             }
                         }
                     }
@@ -146,7 +172,13 @@ impl Analyzer {
                     self.return_types.push(*return_type);
                     self.scopes.push(HashMap::new());
                     for (p, t, _) in parameters {
-                        self.scopes.last_mut().unwrap().insert(p.clone(), BindingInfo { ty: Some(*t), mutable: false });
+                        self.scopes.last_mut().unwrap().insert(
+                            p.clone(),
+                            BindingInfo {
+                                ty: Some(*t),
+                                mutable: false,
+                            },
+                        );
                     }
                     self.analyze_statements(body);
                     self.scopes.pop();
@@ -384,13 +416,27 @@ mod tests {
             .any(|d| d.message.contains("declared as integer")));
     }
     #[test]
-    fn accepts_valid_mutation() { assert!(analyze(&parse("create mutable n: integer = 0; set n = n + 1;" )).is_ok()); }
+    fn accepts_valid_mutation() {
+        assert!(analyze(&parse("create mutable n: integer = 0; set n = n + 1;")).is_ok());
+    }
     #[test]
-    fn rejects_immutable_mutation() { assert!(analyze_all(&parse("create n = 0; set n = 1;" )).iter().any(|d| d.message.contains("immutable variable"))); }
+    fn rejects_immutable_mutation() {
+        assert!(analyze_all(&parse("create n = 0; set n = 1;"))
+            .iter()
+            .any(|d| d.message.contains("immutable variable")));
+    }
     #[test]
-    fn rejects_mutation_type_mismatch() { assert!(analyze_all(&parse("create mutable n: integer = 0; set n = \"bad\";" )).iter().any(|d| d.message.contains("expects integer"))); }
+    fn rejects_mutation_type_mismatch() {
+        assert!(analyze_all(&parse("create mutable n: integer = 0; set n = \"bad\";"))
+            .iter()
+            .any(|d| d.message.contains("expects integer")));
+    }
     #[test]
-    fn rejects_unknown_assignment_target() { assert!(analyze_all(&parse("set missing = 1;" )).iter().any(|d| d.message.contains("undefined variable"))); }
+    fn rejects_unknown_assignment_target() {
+        assert!(analyze_all(&parse("set missing = 1;"))
+            .iter()
+            .any(|d| d.message.contains("undefined variable")));
+    }
     #[test]
     fn accepts_boolean_condition_and_comparison() {
         assert!(analyze(&parse(
