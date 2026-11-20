@@ -251,10 +251,12 @@ mod tests {
     }
     #[test]
     fn scans_loop_keywords() {
-        let tokens = Lexer::new("while (true) { break; continue; }").scan().unwrap();
+        let tokens = Lexer::new("while (true) { break; continue; }")
+            .scan()
+            .unwrap();
         assert_eq!(tokens[0].kind, TokenKind::While);
-        assert_eq!(tokens[4].kind, TokenKind::Break);
-        assert_eq!(tokens[6].kind, TokenKind::Continue);
+        assert_eq!(tokens[5].kind, TokenKind::Break);
+        assert_eq!(tokens[7].kind, TokenKind::Continue);
     }
     #[test]
     fn scans_comments_and_escaped_strings() {

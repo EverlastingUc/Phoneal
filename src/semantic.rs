@@ -196,9 +196,18 @@ impl Analyzer {
                     self.analyze_statements(statements);
                     self.scopes.pop();
                 }
-                Statement::While { condition, body, location } => {
+                Statement::While {
+                    condition,
+                    body,
+                    location,
+                } => {
                     if let Some(t) = self.infer_expression(condition) {
-                        if t != PhonealType::Boolean { self.report(format!("While condition must be boolean, received {t}"), location); }
+                        if t != PhonealType::Boolean {
+                            self.report(
+                                format!("While condition must be boolean, received {t}"),
+                                location,
+                            );
+                        }
                     }
                     self.loop_depth += 1;
                     self.scopes.push(HashMap::new());
@@ -207,10 +216,14 @@ impl Analyzer {
                     self.loop_depth -= 1;
                 }
                 Statement::Break { location } => {
-                    if self.loop_depth == 0 { self.report("'break' is only valid inside a loop".into(), location); }
+                    if self.loop_depth == 0 {
+                        self.report("'break' is only valid inside a loop".into(), location);
+                    }
                 }
                 Statement::Continue { location } => {
-                    if self.loop_depth == 0 { self.report("'continue' is only valid inside a loop".into(), location); }
+                    if self.loop_depth == 0 {
+                        self.report("'continue' is only valid inside a loop".into(), location);
+                    }
                 }
                 Statement::If {
                     condition,
@@ -475,9 +488,15 @@ mod tests {
     #[test]
     fn validates_loop_control_context_and_conditions() {
         assert!(analyze(&parse("while (true) { break; continue; }")).is_ok());
-        assert!(analyze_all(&parse("break;")).iter().any(|d| d.message.contains("only valid inside a loop")));
-        assert!(analyze_all(&parse("continue;")).iter().any(|d| d.message.contains("only valid inside a loop")));
-        assert!(analyze_all(&parse("while (1) {}" )).iter().any(|d| d.message.contains("must be boolean")));
+        assert!(analyze_all(&parse("break;"))
+            .iter()
+            .any(|d| d.message.contains("only valid inside a loop")));
+        assert!(analyze_all(&parse("continue;"))
+            .iter()
+            .any(|d| d.message.contains("only valid inside a loop")));
+        assert!(analyze_all(&parse("while (1) {}"))
+            .iter()
+            .any(|d| d.message.contains("must be boolean")));
     }
     #[test]
     fn checks_function_branch_return_coverage() {

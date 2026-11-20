@@ -35,9 +35,18 @@ struct RuntimeFunction {
 }
 type FunctionTable = HashMap<String, RuntimeFunction>;
 #[derive(Debug)]
-enum Flow { Normal, Return(Value), Break, Continue }
+enum Flow {
+    Normal,
+    Return(Value),
+    Break,
+    Continue,
+}
 fn consume_step(steps: &mut usize) -> Result<(), Diagnostic> {
-    if *steps >= MAX_EXECUTION_STEPS { return Err(Diagnostic::runtime(format!("Maximum execution step budget ({MAX_EXECUTION_STEPS}) exceeded"))); }
+    if *steps >= MAX_EXECUTION_STEPS {
+        return Err(Diagnostic::runtime(format!(
+            "Maximum execution step budget ({MAX_EXECUTION_STEPS}) exceeded"
+        )));
+    }
     *steps += 1;
     Ok(())
 }
@@ -228,8 +237,13 @@ fn evaluate_expression(
             *depth -= 1;
             match result? {
                 Flow::Return(value) => Ok(value),
-                Flow::Normal => Err(runtime_error(format!("Function '{name}' completed without returning a value"), location)),
-                Flow::Break | Flow::Continue => Err(runtime_error("Loop control escaped its loop", location)),
+                Flow::Normal => Err(runtime_error(
+                    format!("Function '{name}' completed without returning a value"),
+                    location,
+                )),
+                Flow::Break | Flow::Continue => {
+                    Err(runtime_error("Loop control escaped its loop", location))
+                }
             }
         }
     }
@@ -272,44 +286,74 @@ fn execute_statements(
                 location,
                 value,
             } => {
-                match env.iter().rev().find_map(|scope| scope.get(name).map(|binding| binding.mutable)) {
+                match env
+                    .iter()
+                    .rev()
+                    .find_map(|scope| scope.get(name).map(|binding| binding.mutable))
+                {
                     Some(true) => {}
-                    Some(false) => return Err(runtime_error(format!("Cannot assign to immutable variable '{name}'"), location)),
-                    None => return Err(runtime_error(format!("Cannot assign to undefined variable '{name}'"), location)),
+                    Some(false) => {
+                        return Err(runtime_error(
+                            format!("Cannot assign to immutable variable '{name}'"),
+                            location,
+                        ))
+                    }
+                    None => {
+                        return Err(runtime_error(
+                            format!("Cannot assign to undefined variable '{name}'"),
+                            location,
+                        ))
+                    }
                 }
                 let v = evaluate_expression(value, env, funcs, out, depth, steps)?;
-                if let Some(binding) = env.iter_mut().rev().find_map(|scope| scope.get_mut(name)) { binding.value = v; }
+                if let Some(binding) = env.iter_mut().rev().find_map(|scope| scope.get_mut(name)) {
+                    binding.value = v;
+                }
             }
             Statement::Print(e) => {
                 let v = evaluate_expression(e, env, funcs, out, depth, steps)?;
                 out.push(v.to_string());
             }
-            Statement::Return { value, .. } => return Ok(Flow::Return(evaluate_expression(value, env, funcs, out, depth, steps)?)),
+            Statement::Return { value, .. } => {
+                return Ok(Flow::Return(evaluate_expression(
+                    value, env, funcs, out, depth, steps,
+                )?))
+            }
             Statement::Function { .. } => {}
             Statement::Block { statements, .. } => {
                 env.push(HashMap::new());
                 let r = execute_statements(statements, env, funcs, out, depth, steps);
                 env.pop();
-                match r? { Flow::Normal => {}, flow => return Ok(flow) }
-            }
-            Statement::While { condition, body, location } => {
-                loop {
-                    consume_step(steps)?;
-                    match evaluate_expression(condition, env, funcs, out, depth, steps)? {
-                        Value::Boolean(false) => break,
-                        Value::Boolean(true) => {},
-                        _ => return Err(runtime_error("While condition must evaluate to boolean", location)),
-                    }
-                    env.push(HashMap::new());
-                    let result = execute_statements(body, env, funcs, out, depth, steps);
-                    env.pop();
-                    match result? {
-                        Flow::Normal | Flow::Continue => {},
-                        Flow::Break => break,
-                        flow @ Flow::Return(_) => return Ok(flow),
-                    }
+                match r? {
+                    Flow::Normal => {}
+                    flow => return Ok(flow),
                 }
             }
+            Statement::While {
+                condition,
+                body,
+                location,
+            } => loop {
+                consume_step(steps)?;
+                match evaluate_expression(condition, env, funcs, out, depth, steps)? {
+                    Value::Boolean(false) => break,
+                    Value::Boolean(true) => {}
+                    _ => {
+                        return Err(runtime_error(
+                            "While condition must evaluate to boolean",
+                            location,
+                        ))
+                    }
+                }
+                env.push(HashMap::new());
+                let result = execute_statements(body, env, funcs, out, depth, steps);
+                env.pop();
+                match result? {
+                    Flow::Normal | Flow::Continue => {}
+                    Flow::Break => break,
+                    flow @ Flow::Return(_) => return Ok(flow),
+                }
+            },
             Statement::Break { .. } => return Ok(Flow::Break),
             Statement::Continue { .. } => return Ok(Flow::Continue),
             Statement::If {
@@ -364,8 +408,12 @@ pub fn execute(ss: &[Statement]) -> Result<Vec<String>, Diagnostic> {
     let mut depth = 0;
     let mut steps = 0;
     match execute_statements(ss, &mut env, &funcs, &mut out, &mut depth, &mut steps)? {
-        Flow::Return(_) => Err(Diagnostic::runtime("Return is only valid inside a function")),
-        Flow::Break | Flow::Continue => Err(Diagnostic::runtime("Loop control is only valid inside a loop")),
+        Flow::Return(_) => Err(Diagnostic::runtime(
+            "Return is only valid inside a function",
+        )),
+        Flow::Break | Flow::Continue => Err(Diagnostic::runtime(
+            "Loop control is only valid inside a loop",
+        )),
         Flow::Normal => Ok(out),
     }
 }
@@ -419,7 +467,9 @@ mod tests {
     }
     #[test]
     fn empty_infinite_loop_consumes_execution_budget() {
-        assert!(run("while (true) {}").unwrap_err().contains("execution step budget"));
+        assert!(run("while (true) {}")
+            .unwrap_err()
+            .contains("execution step budget"));
     }
     #[test]
     fn reports_division_by_zero() {

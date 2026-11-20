@@ -63,7 +63,15 @@ pub enum Statement {
         else_branch: Option<Vec<Statement>>,
         location: SourceLocation,
     },
-    While { condition: Expression, body: Vec<Statement>, location: SourceLocation },
-    Break { location: SourceLocation },
-    Continue { location: SourceLocation },
+    While {
+        condition: Expression,
+        body: Vec<Statement>,
+        location: SourceLocation,
+    },
+    Break {
+        location: SourceLocation,
+    },
+    Continue {
+        location: SourceLocation,
+    },
 }

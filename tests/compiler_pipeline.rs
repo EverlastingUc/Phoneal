@@ -296,7 +296,12 @@ fn loops_execute_and_return_from_inside_loop() {
 }
 #[test]
 fn rejects_invalid_loop_control_and_non_boolean_conditions() {
-    for source in ["break;", "continue;", "while (1) { print(1); }"] { assert!(compile_with_diagnostics(source).is_err(), "accepted: {source}"); }
+    for source in ["break;", "continue;", "while (1) { print(1); }"] {
+        assert!(
+            compile_with_diagnostics(source).is_err(),
+            "accepted: {source}"
+        );
+    }
 }
 #[test]
 fn old_abbreviated_syntax_is_not_accepted() {
