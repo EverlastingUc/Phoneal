@@ -495,7 +495,9 @@ mod tests {
             .parse()
             .unwrap();
         let error = execute(&statements).unwrap_err();
-        assert!(error.message.contains("While condition must evaluate to boolean"));
+        assert!(error
+            .message
+            .contains("While condition must evaluate to boolean"));
     }
     #[test]
     fn nested_loops_consume_nearest_break_and_continue() {
