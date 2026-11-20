@@ -220,7 +220,16 @@ fn evaluate_expression(
             for a in arguments {
                 vals.push(evaluate_expression(a, env, funcs, out, depth, steps)?);
             }
-            let globals = env.first().cloned().unwrap_or_default();
+            let globals = env
+                .first()
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(name, mut binding)| {
+                    binding.mutable = false;
+                    (name, binding)
+                })
+                .collect();
             let mut local = HashMap::new();
             for (p, v) in f.parameters.iter().zip(vals) {
                 local.insert(

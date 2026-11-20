@@ -304,6 +304,11 @@ fn rejects_invalid_loop_control_and_non_boolean_conditions() {
     }
 }
 #[test]
+fn functions_cannot_mutate_outer_scope_bindings() {
+    let errors = compile_with_diagnostics("create mutable total = 0; function update() returns integer { set total = 1; return total; }").unwrap_err();
+    assert!(errors.iter().any(|error| error.message.contains("cannot assign to outer-scope variable")));
+}
+#[test]
 fn old_abbreviated_syntax_is_not_accepted() {
     assert!(compile_with_diagnostics("let value = 1;").is_err());
     assert!(compile_with_diagnostics("fn value() -> integer { return 1; }").is_err());

@@ -27,6 +27,7 @@ pub fn analyze_all(statements: &[Statement]) -> DiagnosticSet {
         diagnostics: Vec::new(),
         return_types: Vec::new(),
         loop_depth: 0,
+        function_scope_depths: Vec::new(),
     };
     a.analyze_statements(statements);
     DiagnosticSet {
@@ -58,6 +59,7 @@ struct Analyzer {
     diagnostics: Vec<Diagnostic>,
     return_types: Vec<PhonealType>,
     loop_depth: usize,
+    function_scope_depths: Vec<usize>,
 }
 impl Analyzer {
     fn report(&mut self, msg: String, loc: &SourceLocation) {
@@ -108,15 +110,24 @@ impl Analyzer {
                     value,
                 } => {
                     let actual = self.infer_expression(value);
-                    match self.lookup(name) {
+                    match self.lookup_with_scope(name) {
                         None => self.report(
                             format!("Cannot assign to undefined variable '{name}'"),
                             location,
                         ),
-                        Some(binding) => {
+                        Some((scope_index, binding)) => {
                             if !binding.mutable {
                                 self.report(
                                     format!("Cannot assign to immutable variable '{name}'"),
+                                    location,
+                                );
+                            } else if self
+                                .function_scope_depths
+                                .last()
+                                .is_some_and(|function_scope| scope_index < *function_scope)
+                            {
+                                self.report(
+                                    format!("Functions cannot assign to outer-scope variable '{name}'"),
                                     location,
                                 );
                             }
@@ -174,6 +185,7 @@ impl Analyzer {
                     self.return_types.push(*return_type);
                     let enclosing_loop_depth = std::mem::replace(&mut self.loop_depth, 0);
                     self.scopes.push(HashMap::new());
+                    self.function_scope_depths.push(self.scopes.len() - 1);
                     for (p, t, _) in parameters {
                         self.scopes.last_mut().unwrap().insert(
                             p.clone(),
@@ -185,6 +197,7 @@ impl Analyzer {
                     }
                     self.analyze_statements(body);
                     self.scopes.pop();
+                    self.function_scope_depths.pop();
                     self.return_types.pop();
                     self.loop_depth = enclosing_loop_depth;
                     if !guarantees_return(body) {
@@ -252,7 +265,14 @@ impl Analyzer {
         }
     }
     fn lookup(&self, n: &str) -> Option<BindingInfo> {
-        self.scopes.iter().rev().find_map(|s| s.get(n).copied())
+        self.lookup_with_scope(n).map(|(_, binding)| binding)
+    }
+    fn lookup_with_scope(&self, name: &str) -> Option<(usize, BindingInfo)> {
+        self.scopes
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, scope)| scope.get(name).copied().map(|binding| (index, binding)))
     }
     fn infer_expression(&mut self, e: &Expression) -> Option<PhonealType> {
         match e {
@@ -471,6 +491,11 @@ mod tests {
         assert!(analyze_all(&parse("set missing = 1;"))
             .iter()
             .any(|d| d.message.contains("undefined variable")));
+    }
+    #[test]
+    fn rejects_function_mutation_of_outer_bindings() {
+        let source = "create mutable total = 0; function update() returns integer { set total = 1; return total; }";
+        assert!(analyze_all(&parse(source)).iter().any(|d| d.message.contains("cannot assign to outer-scope variable")));
     }
     #[test]
     fn accepts_boolean_condition_and_comparison() {

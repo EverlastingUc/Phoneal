@@ -67,112 +67,122 @@ impl Parser {
         Ok(out)
     }
     fn parse_statement(&mut self) -> Result<Statement, Diagnostic> {
-        if self.take(&TokenKind::Function) {
-            return self.parse_function();
+        match self.peek().kind {
+            TokenKind::Function => {
+                self.advance();
+                self.parse_function()
+            }
+            TokenKind::Create => {
+                self.advance();
+                self.parse_declaration()
+            }
+            TokenKind::Set => {
+                self.advance();
+                self.parse_assignment()
+            }
+            TokenKind::Print => {
+                self.advance();
+                self.parse_print()
+            }
+            TokenKind::Return => {
+                let token = self.advance();
+                self.parse_return(token)
+            }
+            TokenKind::If => {
+                self.advance();
+                self.parse_if()
+            }
+            TokenKind::While => {
+                self.advance();
+                self.parse_while()
+            }
+            TokenKind::Break | TokenKind::Continue => self.parse_loop_control(),
+            TokenKind::LeftBrace => {
+                self.advance();
+                self.parse_block()
+            }
+            _ => {
+                let token = self.peek();
+                Err(Diagnostic::parsing(
+                    "Expected create, set, print, function, if, while, break, continue, return, or a block",
+                    token.line,
+                    token.column,
+                ))
+            }
         }
-        if self.take(&TokenKind::Create) {
-            let mutable = self.take(&TokenKind::Mutable);
-            let t = self.advance();
-            let loc = Self::loc(&t);
-            let name = match t.kind {
-                TokenKind::Identifier(n) => n,
-                _ => {
-                    return Err(Diagnostic::parsing(
-                        "Expected a variable name after 'create'",
-                        t.line,
-                        t.column,
-                    ))
-                }
-            };
-            let declared_type = if self.take(&TokenKind::Colon) {
-                Some(self.parse_type()?)
-            } else {
-                None
-            };
-            self.require(
-                &TokenKind::Equal,
-                "Expected '=' after variable name or type",
-            )?;
-            let value = self.parse_expression()?;
-            self.require(
-                &TokenKind::Semicolon,
-                "Expected ';' after variable declaration",
-            )?;
-            return Ok(Statement::Let {
-                name,
-                mutable,
-                name_location: loc,
-                declared_type,
-                value,
-            });
+    }
+    fn parse_declaration(&mut self) -> Result<Statement, Diagnostic> {
+        let mutable = self.take(&TokenKind::Mutable);
+        let token = self.advance();
+        let location = Self::loc(&token);
+        let name = match token.kind {
+            TokenKind::Identifier(name) => name,
+            _ => {
+                return Err(Diagnostic::parsing(
+                    "Expected a variable name after 'create'",
+                    token.line,
+                    token.column,
+                ))
+            }
+        };
+        let declared_type = if self.take(&TokenKind::Colon) {
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+        self.require(&TokenKind::Equal, "Expected '=' after variable name or type")?;
+        let value = self.parse_expression()?;
+        self.require(&TokenKind::Semicolon, "Expected ';' after variable declaration")?;
+        Ok(Statement::Let {
+            name,
+            mutable,
+            name_location: location,
+            declared_type,
+            value,
+        })
+    }
+    fn parse_assignment(&mut self) -> Result<Statement, Diagnostic> {
+        let token = self.advance();
+        let location = Self::loc(&token);
+        let name = match token.kind {
+            TokenKind::Identifier(name) => name,
+            _ => {
+                return Err(Diagnostic::parsing(
+                    "Expected a variable name after 'set'",
+                    token.line,
+                    token.column,
+                ))
+            }
+        };
+        self.require(&TokenKind::Equal, "Expected '=' after variable name")?;
+        let value = self.parse_expression()?;
+        self.require(&TokenKind::Semicolon, "Expected ';' after assignment")?;
+        Ok(Statement::Assign { name, location, value })
+    }
+    fn parse_print(&mut self) -> Result<Statement, Diagnostic> {
+        self.require(&TokenKind::LeftParen, "Expected '(' after print")?;
+        let value = self.parse_expression()?;
+        self.require(&TokenKind::RightParen, "Expected ')' after print value")?;
+        self.require(&TokenKind::Semicolon, "Expected ';' after print")?;
+        Ok(Statement::Print(value))
+    }
+    fn parse_return(&mut self, token: Token) -> Result<Statement, Diagnostic> {
+        let value = self.parse_expression()?;
+        self.require(&TokenKind::Semicolon, "Expected ';' after return value")?;
+        Ok(Statement::Return {
+            value,
+            location: Self::loc(&token),
+        })
+    }
+    fn parse_loop_control(&mut self) -> Result<Statement, Diagnostic> {
+        let token = self.advance();
+        let location = Self::loc(&token);
+        self.require(&TokenKind::Semicolon, "Expected ';' after loop control statement")?;
+        match token.kind {
+            TokenKind::Break => Ok(Statement::Break { location }),
+            TokenKind::Continue => Ok(Statement::Continue { location }),
+            _ => unreachable!(),
         }
-        if self.take(&TokenKind::Set) {
-            let t = self.advance();
-            let location = Self::loc(&t);
-            let name = match t.kind {
-                TokenKind::Identifier(n) => n,
-                _ => {
-                    return Err(Diagnostic::parsing(
-                        "Expected a variable name after 'set'",
-                        t.line,
-                        t.column,
-                    ))
-                }
-            };
-            self.require(&TokenKind::Equal, "Expected '=' after variable name")?;
-            let value = self.parse_expression()?;
-            self.require(&TokenKind::Semicolon, "Expected ';' after assignment")?;
-            return Ok(Statement::Assign {
-                name,
-                location,
-                value,
-            });
-        }
-        if self.take(&TokenKind::Print) {
-            self.require(&TokenKind::LeftParen, "Expected '(' after print")?;
-            let e = self.parse_expression()?;
-            self.require(&TokenKind::RightParen, "Expected ')' after print value")?;
-            self.require(&TokenKind::Semicolon, "Expected ';' after print")?;
-            return Ok(Statement::Print(e));
-        }
-        if self.take(&TokenKind::Return) {
-            let t = self.tokens[self.position - 1].clone();
-            let value = self.parse_expression()?;
-            self.require(&TokenKind::Semicolon, "Expected ';' after return value")?;
-            return Ok(Statement::Return {
-                value,
-                location: Self::loc(&t),
-            });
-        }
-        if self.take(&TokenKind::If) {
-            return self.parse_if();
-        }
-        if self.take(&TokenKind::While) {
-            return self.parse_while();
-        }
-        if self.take(&TokenKind::Break) {
-            let token = self.tokens[self.position - 1].clone();
-            self.require(&TokenKind::Semicolon, "Expected ';' after break")?;
-            return Ok(Statement::Break {
-                location: Self::loc(&token),
-            });
-        }
-        if self.take(&TokenKind::Continue) {
-            let token = self.tokens[self.position - 1].clone();
-            self.require(&TokenKind::Semicolon, "Expected ';' after continue")?;
-            return Ok(Statement::Continue {
-                location: Self::loc(&token),
-            });
-        }
-        if self.take(&TokenKind::LeftBrace) {
-            return self.parse_block();
-        }
-        let t = self.peek();
-        Err(Diagnostic::parsing(
-            "Expected create, set, print, function, if, while, break, continue, return, or a block",
-            t.line,
-            t.column,
-        ))
     }
     fn parse_function(&mut self) -> Result<Statement, Diagnostic> {
         let nt = self.advance();
