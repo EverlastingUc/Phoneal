@@ -498,14 +498,22 @@ mod tests {
     #[test]
     fn runtime_checks_assignment_before_evaluating_its_value() {
         let source = "create value = 1; function fail() returns integer { return 1 / 0; } set value = fail();";
-        let statements = Parser::new(Lexer::new(source).scan().unwrap()).parse().unwrap();
+        let statements = Parser::new(Lexer::new(source).scan().unwrap())
+            .parse()
+            .unwrap();
         let error = execute(&statements).unwrap_err();
         assert!(error.message.contains("immutable variable"));
         assert!(!error.message.contains("Division by zero"));
     }
     #[test]
     fn runtime_rejects_assignment_type_changes_without_semantic_analysis() {
-        let statements = Parser::new(Lexer::new("create mutable value = 1; set value = \"wrong\";").scan().unwrap()).parse().unwrap();
+        let statements = Parser::new(
+            Lexer::new("create mutable value = 1; set value = \"wrong\";")
+                .scan()
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         let error = execute(&statements).unwrap_err();
         assert!(error.message.contains("changes its value type"));
     }
