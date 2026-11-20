@@ -127,7 +127,9 @@ impl Analyzer {
                                 .is_some_and(|function_scope| scope_index < *function_scope)
                             {
                                 self.report(
-                                    format!("Functions cannot assign to outer-scope variable '{name}'"),
+                                    format!(
+                                        "Functions cannot assign to outer-scope variable '{name}'"
+                                    ),
                                     location,
                                 );
                             }
@@ -495,7 +497,9 @@ mod tests {
     #[test]
     fn rejects_function_mutation_of_outer_bindings() {
         let source = "create mutable total = 0; function update() returns integer { set total = 1; return total; }";
-        assert!(analyze_all(&parse(source)).iter().any(|d| d.message.contains("cannot assign to outer-scope variable")));
+        assert!(analyze_all(&parse(source))
+            .iter()
+            .any(|d| d.message.contains("cannot assign to outer-scope variable")));
     }
     #[test]
     fn accepts_boolean_condition_and_comparison() {

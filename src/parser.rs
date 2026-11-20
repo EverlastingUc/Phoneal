@@ -130,9 +130,15 @@ impl Parser {
         } else {
             None
         };
-        self.require(&TokenKind::Equal, "Expected '=' after variable name or type")?;
+        self.require(
+            &TokenKind::Equal,
+            "Expected '=' after variable name or type",
+        )?;
         let value = self.parse_expression()?;
-        self.require(&TokenKind::Semicolon, "Expected ';' after variable declaration")?;
+        self.require(
+            &TokenKind::Semicolon,
+            "Expected ';' after variable declaration",
+        )?;
         Ok(Statement::Let {
             name,
             mutable,
@@ -157,7 +163,11 @@ impl Parser {
         self.require(&TokenKind::Equal, "Expected '=' after variable name")?;
         let value = self.parse_expression()?;
         self.require(&TokenKind::Semicolon, "Expected ';' after assignment")?;
-        Ok(Statement::Assign { name, location, value })
+        Ok(Statement::Assign {
+            name,
+            location,
+            value,
+        })
     }
     fn parse_print(&mut self) -> Result<Statement, Diagnostic> {
         self.require(&TokenKind::LeftParen, "Expected '(' after print")?;
@@ -177,7 +187,10 @@ impl Parser {
     fn parse_loop_control(&mut self) -> Result<Statement, Diagnostic> {
         let token = self.advance();
         let location = Self::loc(&token);
-        self.require(&TokenKind::Semicolon, "Expected ';' after loop control statement")?;
+        self.require(
+            &TokenKind::Semicolon,
+            "Expected ';' after loop control statement",
+        )?;
         match token.kind {
             TokenKind::Break => Ok(Statement::Break { location }),
             TokenKind::Continue => Ok(Statement::Continue { location }),
