@@ -520,7 +520,9 @@ mod tests {
     #[test]
     fn runtime_functions_cannot_mutate_cloned_global_bindings() {
         let source = "create mutable total = 0; function update() returns integer { set total = 1; return total; } print(update());";
-        let statements = Parser::new(Lexer::new(source).scan().unwrap()).parse().unwrap();
+        let statements = Parser::new(Lexer::new(source).scan().unwrap())
+            .parse()
+            .unwrap();
         let error = execute(&statements).unwrap_err();
         assert!(error.message.contains("immutable variable"));
     }
