@@ -275,6 +275,7 @@ Rules:
 - Arguments are positional in the first language version.
 - Functions are declared at top level in the initial model.
 - Forward calls and recursion are supported only when the compiler can validate signatures.
+- Functions may read top-level bindings, but cannot mutate outer-scope bindings. The current call model uses a read-only snapshot of globals rather than shared mutable global state.
 - Every non-`unit` function must return a value on every reachable path.
 - Runtime recursion and total execution are bounded by sandbox policy.
 

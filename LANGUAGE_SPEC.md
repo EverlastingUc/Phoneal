@@ -14,7 +14,8 @@ The canonical syntax reference is [Syntax.md](Syntax.md).
 - Logical operators: `and`, `or`, `not` with short-circuit evaluation
 - `if`, `else if`, and `else`, with boolean-only conditions
 - `while` loops with boolean-only conditions, including nested loops, `break`, and `continue`
-- Explicit mutable bindings (`create mutable`) and type-checked `set` assignment
+- Explicit mutable bindings (`create mutable`) and type-checked `set` assignment; runtime also validates assignment target mutability and value type before updating
+- Functions may read top-level bindings but cannot mutate outer-scope bindings
 - Nested lexical scopes and shadowing
 - Typed function arguments, return checking, forward references, and recursion
 - Multi-error semantic diagnostics with source locations

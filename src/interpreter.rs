@@ -486,6 +486,18 @@ mod tests {
         assert_eq!(run("function factorial(n: integer) returns integer { if (n <= 1) { return 1; } else { return n * factorial(n - 1); } } print(factorial(5));").unwrap(),["120"]);
     }
     #[test]
+    fn false_loop_condition_skips_the_body() {
+        assert_eq!(run("while (false) { print(1); } print(2);").unwrap(), ["2"]);
+    }
+    #[test]
+    fn runtime_rejects_non_boolean_loop_conditions_without_semantic_analysis() {
+        let statements = Parser::new(Lexer::new("while (1) { print(1); }").scan().unwrap())
+            .parse()
+            .unwrap();
+        let error = execute(&statements).unwrap_err();
+        assert!(error.message.contains("While condition must evaluate to boolean"));
+    }
+    #[test]
     fn nested_loops_consume_nearest_break_and_continue() {
         assert_eq!(run("create mutable outer = 0; while (outer < 2) { set outer = outer + 1; create mutable inner = 0; while (inner < 4) { set inner = inner + 1; if (inner == 2) { continue; } if (inner == 3) { break; } print(outer * 10 + inner); } }").unwrap(), ["11", "21"]);
     }

@@ -20,6 +20,7 @@ Front-end admission limits: 1 MiB source, 100,000 tokens, and 256 nested grammar
 - Variable types may be inferred from initializers or explicitly annotated; mismatched initializers are rejected before execution.
 - Declaration initializers are evaluated before inserting the new binding.
 - Function calls use a fresh parameter scope and do not inherit caller-local variables. Global bindings are read-only inside functions because the current interpreter gives each call a snapshot; static analysis and runtime both reject attempts to mutate those outer bindings.
+- Assignment resolves and validates its target before evaluating the right-hand side. Runtime checks that the replacement value has the same primitive variant as the existing binding.
 - Function signatures are collected before body analysis, allowing forward references and recursion.
 - Function returns unwind through nested blocks and selected conditional branches.
 - Non-boolean conditional and loop expressions are rejected statically.

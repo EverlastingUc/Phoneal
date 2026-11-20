@@ -16,6 +16,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Nested lexical scopes
 - Typed top-level `function` declarations using `returns`
 - Function calls, recursion, and control-flow-aware return checking
+- Functions can read global bindings but cannot mutate outer-scope bindings
 - Source-located lexer, parser, semantic, and runtime diagnostics
 - Comments and escaped string literals
 - CI-verified executable examples (see `examples/README.md`)
