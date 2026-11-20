@@ -377,7 +377,10 @@ fn execute_statements(
                     env.push(HashMap::new());
                     let r = execute_statements(b, env, funcs, out, depth, steps);
                     env.pop();
-                    match r? { Flow::Normal => {}, flow => return Ok(flow) }
+                    match r? {
+                        Flow::Normal => {}
+                        flow => return Ok(flow),
+                    }
                 }
             }
         }
