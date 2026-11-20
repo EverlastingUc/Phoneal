@@ -30,10 +30,12 @@ pub enum Expression {
 pub enum Statement {
     Let {
         name: String,
+        mutable: bool,
         name_location: SourceLocation,
         declared_type: Option<PhonealType>,
         value: Expression,
     },
+    Assign { name: String, location: SourceLocation, value: Expression },
     Print(Expression),
     Return {
         value: Expression,

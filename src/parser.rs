@@ -71,6 +71,7 @@ impl Parser {
             return self.parse_function();
         }
         if self.take(&TokenKind::Create) {
+            let mutable = self.take(&TokenKind::Mutable);
             let t = self.advance();
             let loc = Self::loc(&t);
             let name = match t.kind {
@@ -99,10 +100,20 @@ impl Parser {
             )?;
             return Ok(Statement::Let {
                 name,
+                mutable,
                 name_location: loc,
                 declared_type,
                 value,
             });
+        }
+        if self.take(&TokenKind::Set) {
+            let t = self.advance();
+            let location = Self::loc(&t);
+            let name = match t.kind { TokenKind::Identifier(n) => n, _ => return Err(Diagnostic::parsing("Expected a variable name after 'set'", t.line, t.column)) };
+            self.require(&TokenKind::Equal, "Expected '=' after variable name")?;
+            let value = self.parse_expression()?;
+            self.require(&TokenKind::Semicolon, "Expected ';' after assignment")?;
+            return Ok(Statement::Assign { name, location, value });
         }
         if self.take(&TokenKind::Print) {
             self.require(&TokenKind::LeftParen, "Expected '(' after print")?;
@@ -128,7 +139,7 @@ impl Parser {
         }
         let t = self.peek();
         Err(Diagnostic::parsing(
-            "Expected create, print, function, if, return, or a block",
+            "Expected create, set, print, function, if, return, or a block",
             t.line,
             t.column,
         ))
@@ -413,6 +424,12 @@ mod tests {
         let s="function add(a: integer, b: integer) returns integer { return a + b; } create result = add(20,22);";
         let p = Parser::new(Lexer::new(s).scan().unwrap()).parse().unwrap();
         assert!(matches!(p[0], Statement::Function { .. }));
+    }
+    #[test]
+    fn parses_mutable_and_set_statements() {
+        let p = Parser::new(Lexer::new("create mutable n = 0; set n = 1;").scan().unwrap()).parse().unwrap();
+        assert!(matches!(&p[0], Statement::Let { mutable: true, .. }));
+        assert!(matches!(&p[1], Statement::Assign { .. }));
     }
     #[test]
     fn parses_explicit_variable_type() {

@@ -421,8 +421,8 @@ The Rust prototype rejects source files larger than **1 MiB**, more than **100,0
 
 The current Rust prototype implements the following subset of this specification:
 
-- Implemented: `create` (with optional `: integer`, `: text`, or `: boolean` annotations), `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits, call-depth limit, and per-run statement budget.
-- Not yet implemented: mutable assignment, loops, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
+- Implemented: `create` (with optional `mutable` and optional `: integer`, `: text`, or `: boolean` annotations), `set` assignment with mutability and type checks, `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits, call-depth limit, and per-run statement budget.
+- Not yet implemented: loops, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
 - Explicitly deferred by project owner: Package Manager, Standard Library, and self-hosting compiler.
 
 The Package Manager, Standard Library, and self-hosting compiler are explicitly deferred by the project owner. This list must be updated as each feature lands. Documentation must never mark a feature complete before its end-to-end tests pass.

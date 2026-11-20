@@ -197,6 +197,8 @@ impl Lexer {
                     }
                     match word.as_str() {
                         "create" => TokenKind::Create,
+                        "mutable" => TokenKind::Mutable,
+                        "set" => TokenKind::Set,
                         "print" => TokenKind::Print,
                         "function" => TokenKind::Function,
                         "return" => TokenKind::Return,

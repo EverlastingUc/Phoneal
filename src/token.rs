@@ -1,6 +1,8 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     Create,
+    Mutable,
+    Set,
     Print,
     Function,
     Return,

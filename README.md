@@ -8,7 +8,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 
 ## Current implementation
 
-- `create` declarations with inferred or explicit primitive types (`create age: integer = 18;`) and `print(...)`
+- `create` declarations with inferred or explicit primitive types (`create age: integer = 18;`), explicit mutable bindings (`create mutable score = 0;`), checked `set` assignment, and `print(...)`
 - `integer`, `text`, and `boolean` primitive types
 - Arithmetic, comparisons, and English logical operators (`and`, `or`, `not`)
 - `if` / `else if` / `else` with boolean-only conditions

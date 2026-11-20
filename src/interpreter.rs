@@ -22,7 +22,9 @@ impl std::fmt::Display for Value {
         }
     }
 }
-type Environment = Vec<HashMap<String, Value>>;
+#[derive(Debug, Clone)]
+struct Binding { value: Value, mutable: bool }
+type Environment = Vec<HashMap<String, Binding>>;
 #[derive(Clone)]
 struct RuntimeFunction {
     parameters: Vec<String>,
@@ -77,10 +79,10 @@ fn apply_binary(
     }
 }
 fn lookup(env: &Environment, n: &str) -> Option<Value> {
-    env.iter().rev().find_map(|s| s.get(n).cloned())
+    env.iter().rev().find_map(|s| s.get(n).map(|b| b.value.clone()))
 }
 pub fn evaluate(e: &Expression, env: &HashMap<String, Value>) -> Result<Value, Diagnostic> {
-    let scopes = vec![env.clone()];
+    let scopes = vec![env.iter().map(|(name, value)| (name.clone(), Binding { value: value.clone(), mutable: false })).collect()];
     let mut out = Vec::new();
     let mut depth = 0;
     let mut steps = 0;
@@ -189,7 +191,7 @@ fn evaluate_expression(
             let globals = env.first().cloned().unwrap_or_default();
             let mut local = HashMap::new();
             for (p, v) in f.parameters.iter().zip(vals) {
-                local.insert(p.clone(), v);
+                local.insert(p.clone(), Binding { value: v, mutable: false });
             }
             let mut call_env = vec![globals, local];
             *depth += 1;
@@ -223,6 +225,7 @@ fn execute_statements(
         match s {
             Statement::Let {
                 name,
+                mutable,
                 name_location,
                 value,
                 ..
@@ -234,7 +237,15 @@ fn execute_statements(
                     ));
                 }
                 let v = evaluate_expression(value, env, funcs, out, depth, steps)?;
-                env.last_mut().unwrap().insert(name.clone(), v);
+                env.last_mut().unwrap().insert(name.clone(), Binding { value: v, mutable: *mutable });
+            }
+            Statement::Assign { name, location, value } => {
+                let v = evaluate_expression(value, env, funcs, out, depth, steps)?;
+                match env.iter_mut().rev().find_map(|scope| scope.get_mut(name)) {
+                    Some(binding) if binding.mutable => binding.value = v,
+                    Some(_) => return Err(runtime_error(format!("Cannot assign to immutable variable '{name}'"), location)),
+                    None => return Err(runtime_error(format!("Cannot assign to undefined variable '{name}'"), location)),
+                }
             }
             Statement::Print(e) => {
                 let v = evaluate_expression(e, env, funcs, out, depth, steps)?;
@@ -331,6 +342,8 @@ mod tests {
     fn prints_values() {
         assert_eq!(run("create greeting = \"hello\"; create answer = 6 * 7; print(greeting); print(answer);").unwrap(),["hello","42"]);
     }
+    #[test]
+    fn mutable_variables_update_nearest_binding() { assert_eq!(run("create mutable n = 0; set n = n + 2; { create mutable n = 10; set n = n + 5; print(n); } print(n);").unwrap(), ["15", "2"]); }
     #[test]
     fn runs_boolean_conditions() {
         assert_eq!(run("create age = 20; if (age >= 18 and true) { print(\"adult\"); } else { print(\"minor\"); }").unwrap(),["adult"]);
