@@ -16,10 +16,10 @@ Front-end admission limits: 1 MiB source, 100,000 tokens, and 256 nested grammar
 
 - Parsing completes before semantic analysis and execution.
 - Same-scope redeclaration is rejected; nested shadowing is permitted.
-- Bindings are immutable by default. Mutable bindings carry a runtime mutability flag; `set` resolves the nearest lexical binding and is checked for mutability and type before execution.
+- Bindings are immutable by default. Mutable bindings carry a runtime mutability flag; `set` resolves and validates its target before evaluating the right-hand side, then checks the value type before updating it.
 - Variable types may be inferred from initializers or explicitly annotated; mismatched initializers are rejected before execution.
 - Declaration initializers are evaluated before inserting the new binding.
-- Function calls use a fresh parameter scope and do not inherit caller-local variables.
+- Function calls use a fresh parameter scope and do not inherit caller-local variables. Global bindings are read-only inside functions because the current interpreter gives each call a snapshot; static analysis and runtime both reject attempts to mutate those outer bindings.
 - Function signatures are collected before body analysis, allowing forward references and recursion.
 - Function returns unwind through nested blocks and selected conditional branches.
 - Non-boolean conditional and loop expressions are rejected statically.
