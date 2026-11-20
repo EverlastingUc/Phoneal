@@ -35,11 +35,7 @@ pub enum Statement {
         declared_type: Option<PhonealType>,
         value: Expression,
     },
-    Assign {
-        name: String,
-        location: SourceLocation,
-        value: Expression,
-    },
+    Assign { name: String, location: SourceLocation, value: Expression },
     Print(Expression),
     Return {
         value: Expression,

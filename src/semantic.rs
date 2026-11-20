@@ -427,9 +427,11 @@ mod tests {
     }
     #[test]
     fn rejects_mutation_type_mismatch() {
-        assert!(analyze_all(&parse("create mutable n: integer = 0; set n = \"bad\";"))
-            .iter()
-            .any(|d| d.message.contains("expects integer")));
+        assert!(
+            analyze_all(&parse("create mutable n: integer = 0; set n = \"bad\";"))
+                .iter()
+                .any(|d| d.message.contains("expects integer"))
+        );
     }
     #[test]
     fn rejects_unknown_assignment_target() {

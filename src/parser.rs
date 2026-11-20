@@ -109,24 +109,11 @@ impl Parser {
         if self.take(&TokenKind::Set) {
             let t = self.advance();
             let location = Self::loc(&t);
-            let name = match t.kind {
-                TokenKind::Identifier(n) => n,
-                _ => {
-                    return Err(Diagnostic::parsing(
-                        "Expected a variable name after 'set'",
-                        t.line,
-                        t.column,
-                    ))
-                }
-            };
+            let name = match t.kind { TokenKind::Identifier(n) => n, _ => return Err(Diagnostic::parsing("Expected a variable name after 'set'", t.line, t.column)) };
             self.require(&TokenKind::Equal, "Expected '=' after variable name")?;
             let value = self.parse_expression()?;
             self.require(&TokenKind::Semicolon, "Expected ';' after assignment")?;
-            return Ok(Statement::Assign {
-                name,
-                location,
-                value,
-            });
+            return Ok(Statement::Assign { name, location, value });
         }
         if self.take(&TokenKind::Print) {
             self.require(&TokenKind::LeftParen, "Expected '(' after print")?;
@@ -440,13 +427,7 @@ mod tests {
     }
     #[test]
     fn parses_mutable_and_set_statements() {
-        let p = Parser::new(
-            Lexer::new("create mutable n = 0; set n = 1;")
-                .scan()
-                .unwrap(),
-        )
-        .parse()
-        .unwrap();
+        let p = Parser::new(Lexer::new("create mutable n = 0; set n = 1;").scan().unwrap()).parse().unwrap();
         assert!(matches!(&p[0], Statement::Let { mutable: true, .. }));
         assert!(matches!(&p[1], Statement::Assign { .. }));
     }
