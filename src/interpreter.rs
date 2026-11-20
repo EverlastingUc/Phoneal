@@ -34,6 +34,13 @@ struct RuntimeFunction {
     body: Vec<Statement>,
 }
 type FunctionTable = HashMap<String, RuntimeFunction>;
+#[derive(Debug)]
+enum Flow { Normal, Return(Value), Break, Continue }
+fn consume_step(steps: &mut usize) -> Result<(), Diagnostic> {
+    if *steps >= MAX_EXECUTION_STEPS { return Err(Diagnostic::runtime(format!("Maximum execution step budget ({MAX_EXECUTION_STEPS}) exceeded"))); }
+    *steps += 1;
+    Ok(())
+}
 fn runtime_error(m: impl Into<String>, l: &SourceLocation) -> Diagnostic {
     Diagnostic::at(DiagnosticStage::Runtime, m, l.line, l.column)
 }
@@ -220,11 +227,9 @@ fn evaluate_expression(
             let result = execute_statements(&f.body, &mut call_env, funcs, out, depth, steps);
             *depth -= 1;
             match result? {
-                Some(v) => Ok(v),
-                None => Err(runtime_error(
-                    format!("Function '{name}' completed without returning a value"),
-                    location,
-                )),
+                Flow::Return(value) => Ok(value),
+                Flow::Normal => Err(runtime_error(format!("Function '{name}' completed without returning a value"), location)),
+                Flow::Break | Flow::Continue => Err(runtime_error("Loop control escaped its loop", location)),
             }
         }
     }
@@ -236,14 +241,9 @@ fn execute_statements(
     out: &mut Vec<String>,
     depth: &mut usize,
     steps: &mut usize,
-) -> Result<Option<Value>, Diagnostic> {
+) -> Result<Flow, Diagnostic> {
     for s in ss {
-        if *steps >= MAX_EXECUTION_STEPS {
-            return Err(Diagnostic::runtime(format!(
-                "Maximum execution step budget ({MAX_EXECUTION_STEPS}) exceeded"
-            )));
-        }
-        *steps += 1;
+        consume_step(steps)?;
         match s {
             Statement::Let {
                 name,
@@ -272,41 +272,46 @@ fn execute_statements(
                 location,
                 value,
             } => {
-                let v = evaluate_expression(value, env, funcs, out, depth, steps)?;
-                match env.iter_mut().rev().find_map(|scope| scope.get_mut(name)) {
-                    Some(binding) if binding.mutable => binding.value = v,
-                    Some(_) => {
-                        return Err(runtime_error(
-                            format!("Cannot assign to immutable variable '{name}'"),
-                            location,
-                        ))
-                    }
-                    None => {
-                        return Err(runtime_error(
-                            format!("Cannot assign to undefined variable '{name}'"),
-                            location,
-                        ))
-                    }
+                match env.iter().rev().find_map(|scope| scope.get(name).map(|binding| binding.mutable)) {
+                    Some(true) => {}
+                    Some(false) => return Err(runtime_error(format!("Cannot assign to immutable variable '{name}'"), location)),
+                    None => return Err(runtime_error(format!("Cannot assign to undefined variable '{name}'"), location)),
                 }
+                let v = evaluate_expression(value, env, funcs, out, depth, steps)?;
+                if let Some(binding) = env.iter_mut().rev().find_map(|scope| scope.get_mut(name)) { binding.value = v; }
             }
             Statement::Print(e) => {
                 let v = evaluate_expression(e, env, funcs, out, depth, steps)?;
                 out.push(v.to_string());
             }
-            Statement::Return { value, .. } => {
-                return Ok(Some(evaluate_expression(
-                    value, env, funcs, out, depth, steps,
-                )?))
-            }
+            Statement::Return { value, .. } => return Ok(Flow::Return(evaluate_expression(value, env, funcs, out, depth, steps)?)),
             Statement::Function { .. } => {}
             Statement::Block { statements, .. } => {
                 env.push(HashMap::new());
                 let r = execute_statements(statements, env, funcs, out, depth, steps);
                 env.pop();
-                if let Some(v) = r? {
-                    return Ok(Some(v));
+                match r? { Flow::Normal => {}, flow => return Ok(flow) }
+            }
+            Statement::While { condition, body, location } => {
+                loop {
+                    consume_step(steps)?;
+                    match evaluate_expression(condition, env, funcs, out, depth, steps)? {
+                        Value::Boolean(false) => break,
+                        Value::Boolean(true) => {},
+                        _ => return Err(runtime_error("While condition must evaluate to boolean", location)),
+                    }
+                    env.push(HashMap::new());
+                    let result = execute_statements(body, env, funcs, out, depth, steps);
+                    env.pop();
+                    match result? {
+                        Flow::Normal | Flow::Continue => {},
+                        Flow::Break => break,
+                        flow @ Flow::Return(_) => return Ok(flow),
+                    }
                 }
             }
+            Statement::Break { .. } => return Ok(Flow::Break),
+            Statement::Continue { .. } => return Ok(Flow::Continue),
             Statement::If {
                 condition,
                 then_branch,
@@ -328,14 +333,12 @@ fn execute_statements(
                     env.push(HashMap::new());
                     let r = execute_statements(b, env, funcs, out, depth, steps);
                     env.pop();
-                    if let Some(v) = r? {
-                        return Ok(Some(v));
-                    }
+                    match r? { Flow::Normal => {}, flow => return Ok(flow) }
                 }
             }
         }
     }
-    Ok(None)
+    Ok(Flow::Normal)
 }
 pub fn execute(ss: &[Statement]) -> Result<Vec<String>, Diagnostic> {
     let mut funcs = HashMap::new();
@@ -361,10 +364,9 @@ pub fn execute(ss: &[Statement]) -> Result<Vec<String>, Diagnostic> {
     let mut depth = 0;
     let mut steps = 0;
     match execute_statements(ss, &mut env, &funcs, &mut out, &mut depth, &mut steps)? {
-        Some(_) => Err(Diagnostic::runtime(
-            "Return is only valid inside a function",
-        )),
-        None => Ok(out),
+        Flow::Return(_) => Err(Diagnostic::runtime("Return is only valid inside a function")),
+        Flow::Break | Flow::Continue => Err(Diagnostic::runtime("Loop control is only valid inside a loop")),
+        Flow::Normal => Ok(out),
     }
 }
 #[cfg(test)]
@@ -410,6 +412,14 @@ mod tests {
     #[test]
     fn recursive_factorial_works() {
         assert_eq!(run("function factorial(n: integer) returns integer { if (n <= 1) { return 1; } else { return n * factorial(n - 1); } } print(factorial(5));").unwrap(),["120"]);
+    }
+    #[test]
+    fn nested_loops_consume_nearest_break_and_continue() {
+        assert_eq!(run("create mutable outer = 0; while (outer < 2) { set outer = outer + 1; create mutable inner = 0; while (inner < 4) { set inner = inner + 1; if (inner == 2) { continue; } if (inner == 3) { break; } print(outer * 10 + inner); } }").unwrap(), ["11", "21"]);
+    }
+    #[test]
+    fn empty_infinite_loop_consumes_execution_budget() {
+        assert!(run("while (true) {}").unwrap_err().contains("execution step budget"));
     }
     #[test]
     fn reports_division_by_zero() {

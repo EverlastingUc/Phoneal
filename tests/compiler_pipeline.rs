@@ -290,6 +290,15 @@ fn rejects_integer_as_boolean_condition() {
     assert!(errors.iter().any(|e| e.message.contains("must be boolean")));
 }
 #[test]
+fn loops_execute_and_return_from_inside_loop() {
+    assert_eq!(run("create mutable n = 0; while (n < 6) { set n = n + 1; if (n == 2) { continue; } if (n == 5) { break; } print(n); }").unwrap(), ["1", "3", "4"]);
+    assert_eq!(run("function find() returns integer { create mutable n = 0; while (true) { set n = n + 1; if (n == 3) { return n; } } return 0; } print(find());").unwrap(), ["3"]);
+}
+#[test]
+fn rejects_invalid_loop_control_and_non_boolean_conditions() {
+    for source in ["break;", "continue;", "while (1) { print(1); }"] { assert!(compile_with_diagnostics(source).is_err(), "accepted: {source}"); }
+}
+#[test]
 fn old_abbreviated_syntax_is_not_accepted() {
     assert!(compile_with_diagnostics("let value = 1;").is_err());
     assert!(compile_with_diagnostics("fn value() -> integer { return 1; }").is_err());

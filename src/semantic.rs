@@ -26,6 +26,7 @@ pub fn analyze_all(statements: &[Statement]) -> DiagnosticSet {
         seen_functions: HashSet::new(),
         diagnostics: Vec::new(),
         return_types: Vec::new(),
+        loop_depth: 0,
     };
     a.analyze_statements(statements);
     DiagnosticSet {
@@ -56,6 +57,7 @@ struct Analyzer {
     seen_functions: HashSet<String>,
     diagnostics: Vec<Diagnostic>,
     return_types: Vec<PhonealType>,
+    loop_depth: usize,
 }
 impl Analyzer {
     fn report(&mut self, msg: String, loc: &SourceLocation) {
@@ -170,6 +172,7 @@ impl Analyzer {
                         }
                     }
                     self.return_types.push(*return_type);
+                    let enclosing_loop_depth = std::mem::replace(&mut self.loop_depth, 0);
                     self.scopes.push(HashMap::new());
                     for (p, t, _) in parameters {
                         self.scopes.last_mut().unwrap().insert(
@@ -183,6 +186,7 @@ impl Analyzer {
                     self.analyze_statements(body);
                     self.scopes.pop();
                     self.return_types.pop();
+                    self.loop_depth = enclosing_loop_depth;
                     if !guarantees_return(body) {
                         self.report(format!("Function '{name}' does not return a {return_type} value on every path"),return_type_location);
                     }
@@ -191,6 +195,22 @@ impl Analyzer {
                     self.scopes.push(HashMap::new());
                     self.analyze_statements(statements);
                     self.scopes.pop();
+                }
+                Statement::While { condition, body, location } => {
+                    if let Some(t) = self.infer_expression(condition) {
+                        if t != PhonealType::Boolean { self.report(format!("While condition must be boolean, received {t}"), location); }
+                    }
+                    self.loop_depth += 1;
+                    self.scopes.push(HashMap::new());
+                    self.analyze_statements(body);
+                    self.scopes.pop();
+                    self.loop_depth -= 1;
+                }
+                Statement::Break { location } => {
+                    if self.loop_depth == 0 { self.report("'break' is only valid inside a loop".into(), location); }
+                }
+                Statement::Continue { location } => {
+                    if self.loop_depth == 0 { self.report("'continue' is only valid inside a loop".into(), location); }
                 }
                 Statement::If {
                     condition,
@@ -451,6 +471,13 @@ mod tests {
         assert!(analyze_all(&parse("if (10) { print(1); }"))
             .iter()
             .any(|d| d.message.contains("must be boolean")));
+    }
+    #[test]
+    fn validates_loop_control_context_and_conditions() {
+        assert!(analyze(&parse("while (true) { break; continue; }")).is_ok());
+        assert!(analyze_all(&parse("break;")).iter().any(|d| d.message.contains("only valid inside a loop")));
+        assert!(analyze_all(&parse("continue;")).iter().any(|d| d.message.contains("only valid inside a loop")));
+        assert!(analyze_all(&parse("while (1) {}" )).iter().any(|d| d.message.contains("must be boolean")));
     }
     #[test]
     fn checks_function_branch_return_coverage() {

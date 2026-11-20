@@ -144,15 +144,24 @@ impl Parser {
                 location: Self::loc(&t),
             });
         }
-        if self.take(&TokenKind::If) {
-            return self.parse_if();
+        if self.take(&TokenKind::If) { return self.parse_if(); }
+        if self.take(&TokenKind::While) { return self.parse_while(); }
+        if self.take(&TokenKind::Break) {
+            let token = self.tokens[self.position - 1].clone();
+            self.require(&TokenKind::Semicolon, "Expected ';' after break")?;
+            return Ok(Statement::Break { location: Self::loc(&token) });
+        }
+        if self.take(&TokenKind::Continue) {
+            let token = self.tokens[self.position - 1].clone();
+            self.require(&TokenKind::Semicolon, "Expected ';' after continue")?;
+            return Ok(Statement::Continue { location: Self::loc(&token) });
         }
         if self.take(&TokenKind::LeftBrace) {
             return self.parse_block();
         }
         let t = self.peek();
         Err(Diagnostic::parsing(
-            "Expected create, set, print, function, if, return, or a block",
+            "Expected create, set, print, function, if, while, break, continue, return, or a block",
             t.line,
             t.column,
         ))
@@ -229,6 +238,15 @@ impl Parser {
                 t.column,
             )),
         }
+    }
+    fn parse_while(&mut self) -> Result<Statement, Diagnostic> {
+        let start = self.tokens[self.position - 1].clone();
+        self.require(&TokenKind::LeftParen, "Expected '(' after while")?;
+        let condition = self.parse_expression()?;
+        self.require(&TokenKind::RightParen, "Expected ')' after while condition")?;
+        self.require(&TokenKind::LeftBrace, "Expected '{' after while condition")?;
+        let body = self.parse_block_contents()?;
+        Ok(Statement::While { condition, body, location: Self::loc(&start) })
     }
     fn parse_if(&mut self) -> Result<Statement, Diagnostic> {
         let start = self.tokens[self.position - 1].clone();
@@ -468,6 +486,11 @@ mod tests {
         let s = "if (true or false and not false) { print(1); } else { print(2); }";
         let p = Parser::new(Lexer::new(s).scan().unwrap()).parse().unwrap();
         assert!(matches!(p[0], Statement::If { .. }));
+    }
+    #[test]
+    fn parses_while_and_loop_control() {
+        let parsed = Parser::new(Lexer::new("while (true) { break; continue; }").scan().unwrap()).parse().unwrap();
+        assert!(matches!(parsed[0], Statement::While { .. }));
     }
     #[test]
     fn parses_nested_blocks() {

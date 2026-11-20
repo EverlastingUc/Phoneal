@@ -205,6 +205,9 @@ impl Lexer {
                         "returns" => TokenKind::Returns,
                         "if" => TokenKind::If,
                         "else" => TokenKind::Else,
+                        "while" => TokenKind::While,
+                        "break" => TokenKind::Break,
+                        "continue" => TokenKind::Continue,
                         "true" => TokenKind::True,
                         "false" => TokenKind::False,
                         "and" => TokenKind::And,
@@ -245,6 +248,13 @@ mod tests {
         assert_eq!(t[0].kind, TokenKind::Create);
         assert_eq!(t[5].kind, TokenKind::Function);
         assert!(t.iter().any(|x| x.kind == TokenKind::EqualEqual));
+    }
+    #[test]
+    fn scans_loop_keywords() {
+        let tokens = Lexer::new("while (true) { break; continue; }").scan().unwrap();
+        assert_eq!(tokens[0].kind, TokenKind::While);
+        assert_eq!(tokens[4].kind, TokenKind::Break);
+        assert_eq!(tokens[6].kind, TokenKind::Continue);
     }
     #[test]
     fn scans_comments_and_escaped_strings() {
