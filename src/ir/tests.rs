@@ -1,8 +1,5 @@
 use super::*;
-use crate::diagnostic::Diagnostic;
-
-    use super::*;
-    use crate::{lexer::Lexer, parser::Parser, semantic::analyze};
+use crate::{diagnostic::Diagnostic, lexer::Lexer, parser::Parser, semantic::analyze};
 
     fn lower_source(source: &str) -> Result<TypedProgram, Diagnostic> {
         let tokens = Lexer::new(source).scan()?;
