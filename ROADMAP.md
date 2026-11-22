@@ -124,6 +124,17 @@ The listing is a debugging representation, not a source-level decompiler.
 - Existing `phnl run` remains the AST interpreter path; `phnl check` remains the frontend validation path.
 - End-to-end CLI tests cover build, inspect, bytecode execution, checking, and extension validation.
 
+### Phase 19 — Precompiled Bytecode Execution CLI
+
+**Implementation in progress; CI verification pending.**
+
+- `phnl execute <file.phnb>` reads an existing PHNB file.
+- Deserialization performs file bounds, CRC-32, structural, and typed stack-flow verification before execution.
+- The verified program runs in the bytecode VM and prints captured output.
+- CLI integration tests execute a file produced by `phnl build`.
+
+This command does not make PHNB files safe for untrusted use; the VM is not a sandbox.
+
 ## Latest verified implementation
 
 - Code commit: `6c680367b015956ea852bba6751302aa4f50a2b4`
