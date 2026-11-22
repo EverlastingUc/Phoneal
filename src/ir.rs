@@ -611,7 +611,10 @@ pub fn validate(program: &TypedProgram) -> Result<(), Diagnostic> {
                 .collect(),
             function.return_type,
         );
-        if signatures.insert(function.name.clone(), signature).is_some() {
+        if signatures
+            .insert(function.name.clone(), signature)
+            .is_some()
+        {
             return Err(Lowerer::error(
                 "IR contains a duplicate function declaration",
                 Some(&function.location),
