@@ -9,7 +9,9 @@ use crate::{
 use std::collections::HashMap;
 
 mod validate;
+mod vm;
 pub use validate::validate_structure;
+pub use vm::{execute as execute_bytecode, Value as BytecodeValue};
 
 /// An instruction in Phoneal's compiler-facing stack bytecode.
 #[derive(Debug, Clone, PartialEq)]
