@@ -698,6 +698,13 @@ mod tests {
             program.statements[0].location,
             Some(SourceLocation { line: 1, column: 8 })
         );
+        match &program.statements[0].kind {
+            TypedStatementKind::Let { value, .. } => assert_eq!(
+                value.location,
+                Some(SourceLocation { line: 1, column: 16 })
+            ),
+            _ => panic!("expected declaration"),
+        }
         match &program.statements[1].kind {
             TypedStatementKind::Print(expression) => {
                 assert_eq!(
