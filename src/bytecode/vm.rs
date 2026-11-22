@@ -138,15 +138,20 @@ impl<'a> Vm<'a> {
         self.push(value, location)
     }
 
-    fn store_local(&mut self, frame_index: usize, slot: usize, location: Option<&SourceLocation>) -> Result<(), Diagnostic> {
+    fn store_local(&mut self, frame_index: usize, slot: usize, instruction_offset: usize, location: Option<&SourceLocation>) -> Result<(), Diagnostic> {
         let value = self.pop(location)?;
         let (expected, mutable) = self.local_metadata(frame_index, slot, location)?;
+        let is_declaration = self.function(frame_index)
+            .local_declarations.get(slot).copied().flatten() == Some(instruction_offset);
         let target = self.frames[frame_index].locals.get_mut(slot)
             .ok_or_else(|| Self::fail("Local slot is outside the current frame", location))?;
         if !value.has_type(expected) {
             return Err(Self::fail("Local assignment violates its declared type", location));
         }
-        if target.is_some() && !mutable {
+        if target.is_none() && !is_declaration {
+            return Err(Self::fail("Cannot assign to an uninitialized local variable", location));
+        }
+        if target.is_some() && !mutable && !is_declaration {
             return Err(Self::fail("Cannot assign to an immutable local variable", location));
         }
         *target = Some(value);
@@ -260,15 +265,7 @@ impl<'a> Vm<'a> {
                 Opcode::PushText(value) => self.push(Value::Text(value), location.as_ref())?,
                 Opcode::PushBoolean(value) => self.push(Value::Boolean(value), location.as_ref())?,
                 Opcode::LoadLocal(slot) => self.load_local(frame_index, slot, location.as_ref())?,
-                Opcode::StoreLocal(slot) => self.store_local(frame_index, slot, location.as_ref())?,
-                Opcode::ResetLocals { start, count } => {
-                    let end = start.checked_add(count)
-                        .ok_or_else(|| Self::fail("Local reset range overflows", location.as_ref()))?;
-                    let locals = &mut self.frames[frame_index].locals;
-                    let range = locals.get_mut(start..end)
-                        .ok_or_else(|| Self::fail("Local reset range is outside the current frame", location.as_ref()))?;
-                    range.fill(None);
-                }
+                Opcode::StoreLocal(slot) => self.store_local(frame_index, slot, ip, location.as_ref())?,
                 Opcode::LoadGlobal(slot) => self.load_global(slot, location.as_ref())?,
                 Opcode::StoreGlobal(slot) => self.store_global(frame_index, slot, location.as_ref())?,
                 Opcode::Pop => { self.pop(location.as_ref())?; }
