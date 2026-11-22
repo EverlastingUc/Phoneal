@@ -25,6 +25,10 @@ Mutable assignment and while-loop control flow are implemented and demonstrated 
 for the authoritative implementation-status list.
 
 
+### Bytecode compiler input
+
+`bytecode_compiler.phnl` is a representative source program for the bytecode compiler API. It is not included in the interpreter-run script because the CLI does not yet expose bytecode compilation or VM execution. Integration tests exercise it through the Rust API.
+
 ### Typed IR
 
 `typed_ir.phnl` exercises typed function calls, arithmetic, mutable bindings, and loop control through the current interpreter. The integration tests compile the same language constructs through `compile_to_ir` and validate their typed representation.
