@@ -42,11 +42,20 @@ The interpreter still executes the AST. The typed IR is the compiler-facing repr
 
 The successful CI run executed `cargo fmt --all`, `cargo fmt --all -- --check`, `cargo clippy --locked --all-targets --all-features`, `cargo build --locked`, `bash scripts/check_examples.sh`, and `cargo test --locked`.
 
-## Next milestone
-
 ### Phase 13 — Bytecode Compiler
 
-The architecture pipeline places bytecode compilation immediately after Typed IR. The supplied project material does not define Phase 13's detailed acceptance criteria yet; those must be specified before implementation begins.
+**Implementation in progress; CI verification pending.**
+
+- Public source API: `compile_to_bytecode(source)`.
+- Public IR API: `bytecode::compile(&TypedProgram)`.
+- Stack-oriented opcodes for primitive constants, local/global slots, arithmetic, comparisons, printing, function calls, returns, and control flow.
+- Branch and loop jump patching, including nearest-loop `break` / `continue`.
+- Short-circuit compilation for `and` and `or`.
+- Source locations retained on emitted instructions.
+- Bytecode compiler diagnostics have a distinct `bytecode` stage.
+- Tests cover arithmetic, function calls, control-flow targets, short-circuit structure, global reads in functions, and source-location retention.
+
+This phase intentionally stops at bytecode generation. It does not claim bytecode verification, serialization, VM execution, or sandboxing.
 
 Expected pipeline direction:
 
