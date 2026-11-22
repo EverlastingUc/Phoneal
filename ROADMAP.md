@@ -32,6 +32,10 @@ The interpreter still executes the AST. The typed IR is the compiler-facing repr
 
 ## Latest verified state
 
+- Latest verified `main` commit: `ddca55bb54ee1b1b8e840cf9515bbb4e51f38b6d`
+- Successful CI: [Phoneal CI #45057359543](https://github.com/EverlastingUc/Phoneal/actions/runs/45057359543)
+- Tests: **115 passed, 0 failed** (67 unit, 42 compiler-pipeline, 3 typed-IR, 3 bytecode-compiler)
+
 - Branch: `main`
 - Verified implementation commit: `5495482e92b3024e0a68d64151edefae8d53d087`
 - Successful GitHub Actions run: [Phoneal CI #45055580840](https://github.com/EverlastingUc/Phoneal/actions/runs/45055580840)
@@ -44,7 +48,7 @@ The successful CI run executed `cargo fmt --all`, `cargo fmt --all -- --check`, 
 
 ### Phase 13 — Bytecode Compiler
 
-**Implementation in progress; CI verification pending.**
+**Complete and CI-verified.**
 
 - Public source API: `compile_to_bytecode(source)`.
 - Public IR API: `bytecode::compile(&TypedProgram)`.
@@ -53,7 +57,8 @@ The successful CI run executed `cargo fmt --all`, `cargo fmt --all -- --check`, 
 - Short-circuit compilation for `and` and `or`.
 - Source locations retained on emitted instructions.
 - Bytecode compiler diagnostics have a distinct `bytecode` stage.
-- Tests cover arithmetic, function calls, control-flow targets, short-circuit structure, global reads in functions, and source-location retention.
+- Structural validation checks jump targets, local/global slots, function-call indices and arity, and function/entry terminators.
+- Tests cover arithmetic, function calls, control-flow targets, short-circuit structure, global reads in functions, source-location retention, and malformed bytecode structures.
 
 This phase intentionally stops at bytecode generation. It does not claim bytecode verification, serialization, VM execution, or sandboxing.
 
