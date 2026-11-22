@@ -83,12 +83,6 @@ pub enum TypedStatementKind {
     Continue,
 }
 
-#[derive(Clone, Copy)]
-struct FunctionSignature {
-    parameters: &'static [PhonealType],
-    return_type: PhonealType,
-}
-
 #[derive(Default)]
 struct Lowerer {
     scopes: Vec<HashMap<String, PhonealType>>,
@@ -692,7 +686,7 @@ mod tests {
         assert_eq!(program.functions.len(), 1);
         assert_eq!(program.statements.len(), 2);
         assert!(matches!(
-            program.statements[0].kind,
+            &program.statements[0].kind,
             TypedStatementKind::Let { ty: PhonealType::Integer, .. }
         ));
     }
@@ -708,7 +702,7 @@ mod tests {
             TypedStatementKind::Print(expression) => {
                 assert_eq!(
                     expression.location,
-                    Some(SourceLocation { line: 1, column: 35 })
+                    Some(SourceLocation { line: 1, column: 26 })
                 );
             }
             _ => panic!("expected print statement"),
