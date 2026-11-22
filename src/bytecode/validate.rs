@@ -13,6 +13,19 @@ fn validate_function(
     if function.code.is_empty() {
         return Err(invalid("Bytecode function has no instructions"));
     }
+    if function.local_types.len() != function.local_count
+        || function.local_mutability.len() != function.local_count
+        || function.parameter_types.len() != function.parameter_count
+        || function.parameter_count > function.local_count
+    {
+        return Err(invalid(format!("Bytecode function '{}' has inconsistent frame metadata", function.name)));
+    }
+    if !is_entry && function.return_type.is_none() {
+        return Err(invalid(format!("Bytecode function '{}' has no return type", function.name)));
+    }
+    if is_entry && function.return_type.is_some() {
+        return Err(invalid("Bytecode entry must not declare a function return type"));
+    }
     if is_entry {
         if !matches!(function.code.last().map(|instruction| &instruction.opcode), Some(Opcode::Halt)) {
             return Err(invalid("Bytecode entry function must end with halt"));
@@ -55,6 +68,11 @@ fn validate_function(
 /// This is not a security verifier: it does not establish stack safety, resource bounds,
 /// capability isolation, or safe execution of hostile bytecode.
 pub fn validate_structure(program: &BytecodeProgram) -> Result<(), Diagnostic> {
+    if program.global_types.len() != program.global_count
+        || program.global_mutability.len() != program.global_count
+    {
+        return Err(invalid("Bytecode program has inconsistent global metadata"));
+    }
     for function in &program.functions {
         validate_function(function, program, false)?;
     }
