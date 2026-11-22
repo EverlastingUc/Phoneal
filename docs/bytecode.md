@@ -18,7 +18,7 @@ The compiler validates the typed IR before lowering it. It then validates the re
 - Top-level bindings occupy global slots.
 - Functions may load global bindings, but the current language semantics prohibit functions from mutating outer/global bindings.
 - Function references use indices into `BytecodeProgram.functions`.
-- The entry code is stored separately as `BytecodeProgram.entry`.
+- The entry code is stored separately as `BytecodeProgram.entry`. Frame metadata records local/parameter/global types and mutability for runtime checks.
 
 ## Instruction contract
 
@@ -64,7 +64,7 @@ This is deliberately **not** a security verifier. It does not prove stack-depth 
 
 ## VM execution
 
-The initial VM executes these instructions with typed local/global slots, mutability enforcement, function frames, checked arithmetic, and bounded instruction/call/stack/text/output usage. The original `run(source)` API still uses the AST interpreter; `run_bytecode(source)` selects the bytecode path.
+The initial VM executes these instructions with typed local/global slots, mutability enforcement, function frames, checked arithmetic, and bounded instruction/call/stack/text/output usage. See [vm.md](vm.md) for its runtime contract. The original `run(source)` API still uses the AST interpreter; `run_bytecode(source)` selects the bytecode path.
 
 ## Deliberate non-goals
 
