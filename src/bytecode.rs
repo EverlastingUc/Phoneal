@@ -220,8 +220,11 @@ impl<'a> FunctionCompiler<'a> {
                 }
             }
             TypedStatementKind::Break => {
+                if self.loops.is_empty() {
+                    return Err(self.error("Break outside loop in bytecode compiler", location));
+                }
                 let jump = self.emit(Opcode::Jump(usize::MAX), location);
-                self.loops.last_mut().ok_or_else(|| self.error("Break outside loop in bytecode compiler", location))?.breaks.push(jump);
+                self.loops.last_mut().expect("loop was checked").breaks.push(jump);
             }
             TypedStatementKind::Continue => {
                 let target = self.loops.last().ok_or_else(|| self.error("Continue outside loop in bytecode compiler", location))?.continue_target;
