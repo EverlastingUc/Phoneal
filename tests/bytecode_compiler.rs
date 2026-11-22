@@ -18,6 +18,7 @@ fn bytecode_vm_matches_ast_interpreter_on_supported_programs() {
         "function factorial(n: integer) returns integer { if (n <= 1) { return 1; } else { return n * factorial(n - 1); } } print(factorial(6));",
         "create outer = 1; { create outer = 2; print(outer); } print(outer);",
         "create message = \"Phone\" + \"al\"; create enabled = not false and (2 < 3); print(message); print(enabled);",
+        "create mutable count = 0; while (count < 3) { create snapshot = count; set count = count + 1; if (count == 2) { continue; } print(snapshot); }",
     ];
     for source in programs {
         assert_eq!(phoneal::run(source), run_bytecode(source), "program: {source}");
