@@ -1,6 +1,6 @@
 # Phoneal CLI
 
-The Rust CLI currently exposes five commands:
+The Rust CLI exposes `--help` / `-h` and `--version` / `-V` flags, plus these commands:
 
 | Command | Behavior |
 | --- | --- |
