@@ -6,7 +6,7 @@ use std::fmt::Write;
 pub fn disassemble(program: &BytecodeProgram) -> Result<String, Diagnostic> {
     verify(program)?;
     let mut output = String::new();
-    writeln!(&mut output, "Phoneal bytecode (PHNB v1)").expect("writing to String cannot fail");
+    writeln!(&mut output, "Phoneal bytecode (PHNB v2)").expect("writing to String cannot fail");
     writeln!(&mut output, "Globals: {}", program.global_count).expect("writing to String cannot fail");
     for (index, function) in program.functions.iter().enumerate() {
         write_function(&mut output, index, function, program)?;
@@ -44,7 +44,7 @@ fn write_function_body(
 
     for (offset, instruction) in function.code.iter().enumerate() {
         write!(output, "  {offset:04}  ").expect("writing to String cannot fail");
-        write_opcode(output, &instruction.opcode, program)?;
+        write_opcode(output, &instruction.opcode, program, function, offset)?;
         if let Some(location) = &instruction.location {
             write!(output, "    ; {}:{}", location.line, location.column)
                 .expect("writing to String cannot fail");
@@ -58,16 +58,18 @@ fn write_opcode(
     output: &mut String,
     opcode: &Opcode,
     program: &BytecodeProgram,
+    function: &BytecodeFunction,
+    offset: usize,
 ) -> Result<(), Diagnostic> {
     let result = match opcode {
         Opcode::PushInteger(value) => write!(output, "PushInteger {value}"),
         Opcode::PushText(value) => write!(output, "PushText {:?}", value),
         Opcode::PushBoolean(value) => write!(output, "PushBoolean {value}"),
         Opcode::LoadLocal(slot) => write!(output, "LoadLocal {slot}"),
+        Opcode::StoreLocal(slot) if function.local_declarations.get(*slot).copied().flatten() == Some(offset) => write!(output, "StoreLocal {slot} [declaration]"),
         Opcode::StoreLocal(slot) => write!(output, "StoreLocal {slot}"),
         Opcode::LoadGlobal(slot) => write!(output, "LoadGlobal {slot}"),
         Opcode::StoreGlobal(slot) => write!(output, "StoreGlobal {slot}"),
-        Opcode::ResetLocals { start, count } => write!(output, "ResetLocals {start}..{}", *start + *count),
         Opcode::Pop => write!(output, "Pop"),
         Opcode::Print => write!(output, "Print"),
         Opcode::Negate => write!(output, "Negate"),
@@ -116,12 +118,12 @@ mod tests {
     }
 
     #[test]
-    fn disassembles_loop_local_reset_ranges() {
+    fn disassembles_loop_local_declaration_sites() {
         let program = compile_to_bytecode(
             "create mutable count = 0; while (count < 2) { create snapshot = count; set count = count + 1; print(snapshot); }",
         ).unwrap();
         let listing = disassemble(&program).unwrap();
-        assert!(listing.contains("ResetLocals 0..1"));
+        assert!(listing.contains("StoreLocal 0 [declaration]"));
     }
 
     #[test]
