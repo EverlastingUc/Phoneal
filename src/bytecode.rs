@@ -68,7 +68,7 @@ pub struct BytecodeFunction {
     pub code: Vec<Instruction>,
 }
 
-/// Bytecode output. This is a compiler artifact, not an executable or verified VM image.
+/// Bytecode output consumed by the prototype VM; it is not a security-verified executable image.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BytecodeProgram {
     pub functions: Vec<BytecodeFunction>,
