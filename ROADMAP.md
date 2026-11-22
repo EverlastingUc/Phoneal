@@ -171,7 +171,7 @@ This phase delivers the design baseline only. It does not add a sandbox, capabil
 
 ### Phase 23 — Capability Policy Primitives
 
-**Implemented; CI verification pending.**
+**Implemented and CI-verified.**
 
 - Added public `phoneal::security::Capability` names for console input, file read/write, network connect, clock, and randomness.
 - Added `CapabilityPolicy`, defaulting to deny-all, with explicit grant, revoke, query, and authorization methods.
