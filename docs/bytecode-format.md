@@ -2,7 +2,7 @@
 
 **Format:** PHNB version 1  
 **Extension:** `.phnb`  
-**Status:** Serializer/deserializer implementation in progress; CI verification pending.
+**Status:** Serializer/deserializer implemented and CI-verified.
 
 ## Container header
 
