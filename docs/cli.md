@@ -22,6 +22,10 @@ phnl inspect factorial.phnb
 phnl execute factorial.phnb
 ```
 
+## Input limits
+
+The CLI reads at most 1 MiB of source text and 16 MiB of PHNB bytecode. Oversized files are rejected before parsing or deserialization.
+
 ## Execution distinction
 
 `run` uses the original AST interpreter. `run-bytecode` uses the compiler and initial VM. Both are experimental and are not security sandboxes. The CLI does not implement policy files, capability grants, or host-resource isolation. A `--policy` argument is a future design target only.
