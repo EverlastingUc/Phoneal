@@ -169,6 +169,17 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 
 This phase delivers the design baseline only. It does not add a sandbox, capability enforcement, restricted host APIs, filesystem/network isolation, or OS-enforced resource limits. See [security-architecture.md](docs/security-architecture.md).
 
+### Phase 23 — Capability Policy Primitives
+
+**Implemented; CI verification pending.**
+
+- Added public `phoneal::security::Capability` names for console input, file read/write, network connect, clock, and randomness.
+- Added `CapabilityPolicy`, defaulting to deny-all, with explicit grant, revoke, query, and authorization methods.
+- Added stable grant iteration and typed denial errors.
+- Unit tests cover default denial, exact grants, non-implication, revocation, and deterministic listing.
+
+This is a policy model only. No VM operation, host API, IPC broker, or OS permission enforcement consumes these grants yet.
+
 ## Latest verified implementation
 
 - Code commit: `34df7606ee7e9c9c46c633cfa379009bfab2c381`
