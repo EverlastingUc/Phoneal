@@ -67,7 +67,6 @@ fn validate_function(
                 }
             }
             Opcode::Return if is_entry => return Err(invalid("Entry bytecode cannot return from a function")),
-            Opcode::Halt if !is_entry => return Err(invalid("Function bytecode cannot halt the program")),
             _ => {}
         }
     }
@@ -101,6 +100,15 @@ mod tests {
             "function double(value: integer) returns integer { return value * 2; } create mutable n = 0; while (n < 3) { set n = double(n + 1); } print(n);",
         ).unwrap();
         validate_structure(&program).unwrap();
+    }
+
+    #[test]
+    fn rejects_inconsistent_parameter_slot_metadata() {
+        let mut program = compile_to_bytecode(
+            "function identity(value: integer) returns integer { return value; } print(identity(1));",
+        ).unwrap();
+        program.functions[0].parameter_types[0] = crate::types::PhonealType::Boolean;
+        assert!(validate_structure(&program).unwrap_err().message.contains("parameter slots"));
     }
 
     #[test]
