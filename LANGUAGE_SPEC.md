@@ -41,4 +41,4 @@ The Rust API exposes `compile_to_bytecode(source)` and `run_bytecode(source)`. T
 
 ## Not implemented yet
 
-For-each loops, decimals, lists, maps, user-defined types, exception handling, module imports, capability requests, security-grade bytecode verification, serialization, aggregate heap quotas, wall-clock enforcement, and sandboxing remain future milestones. Package Manager, Standard Library, and self-hosting compiler are explicitly deferred.
+For-each loops, decimals, lists, maps, user-defined types, exception handling, module imports, capability requests, security-grade bytecode verification, aggregate heap quotas, wall-clock enforcement, and sandboxing remain future milestones. Package Manager, Standard Library, and self-hosting compiler are explicitly deferred.
