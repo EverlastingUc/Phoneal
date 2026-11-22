@@ -22,7 +22,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Typed bytecode verifier for stack types, control-flow merges, function signatures, definite local initialization, and global-write restrictions
 - Versioned PHNB v2 bytecode serialization/deserialization with bounded parsing, CRC-32 integrity checks, and verification on load
 - Human-readable bytecode disassembler via `bytecode::disassemble`
-- Deny-by-default capability policy primitives in `phoneal::security` (not yet connected to host APIs or a sandbox)
+- Deny-by-default capability policy primitives in `phoneal::security` and bounded PHIP v1 IPC frames in `phoneal::security::ipc` (not yet connected to host APIs, a worker process, or a sandbox)
 - Bytecode VM via `run_bytecode(source)` / `bytecode::execute_bytecode`, with checked arithmetic, typed frames, loop-scope local resets, mutability enforcement, recursion and execution limits
 - Source-located lexer, parser, semantic, bytecode, and runtime diagnostics
 - Comments and escaped string literals
