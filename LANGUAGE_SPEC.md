@@ -23,7 +23,7 @@ The canonical syntax reference is [Syntax.md](Syntax.md).
 
 ## Typed intermediate representation
 
-The Rust API exposes `compile_to_ir(source)`, which runs lexing, parsing, semantic analysis, and typed-IR lowering. The IR has explicit primitive types on expressions and declarations, typed function signatures and calls, structured `if` / `while` control flow, and explicit return/break/continue nodes. `ir::validate` checks variable references, declaration and assignment types, mutability, function signatures, boolean conditions, return types, and loop-control placement. The interpreter still executes the AST; bytecode generation and VM execution are later milestones. Source locations are preserved for statements and expressions, including literals.
+The Rust API exposes `compile_to_ir(source)`, which runs lexing, parsing, semantic analysis, and typed-IR lowering. The implementation is awaiting a successful CI verification run. The IR has explicit primitive types on expressions and declarations, typed function signatures and calls, structured `if` / `while` control flow, and explicit return/break/continue nodes. `ir::validate` checks variable references, declaration and assignment types, mutability, function signatures, boolean conditions, return types, and loop-control placement. The interpreter still executes the AST; bytecode generation and VM execution are later milestones. Source locations are preserved for statements and expressions, including literals.
 
 ## Example
 
