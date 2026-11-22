@@ -20,7 +20,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Typed intermediate representation via `compile_to_ir(source)`, with source locations and IR validation
 - Source-located lexer, parser, semantic, and runtime diagnostics
 - Comments and escaped string literals
-- Executable language examples (see `examples/README.md`)
+- CI-verified executable language examples (see `examples/README.md`)
 - Resource limits: 1 MiB source, 100,000 tokens, 256 nested grammar levels, 128 active calls, and 50,000 execution steps per run (including loop condition checks)
 
 ```phoneal
