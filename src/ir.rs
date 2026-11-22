@@ -819,6 +819,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(program.functions.len(), 1);
+        assert_eq!(program.functions[0].parameters[0].location, SourceLocation { line: 1, column: 14 });
         assert_eq!(program.statements.len(), 2);
         assert!(matches!(
             &program.statements[0].kind,
