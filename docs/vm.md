@@ -13,7 +13,7 @@ The existing `run(source)` API continues to use the AST interpreter.
 
 The VM uses a value stack, a global slot frame, and one local frame per active function call. Each call frame stores its function index, instruction pointer, local slots, and the operand-stack base at call time. Parameters occupy the first local slots in declaration order. Calls evaluate arguments left-to-right; the VM checks argument types before entering the callee. A return value is checked against the declared function result type before it is pushed for the caller.
 
-Values are integers (`i64`), UTF-8 text, or booleans. Local and global slot metadata carries primitive types and mutability. A first store initializes a binding; later stores require mutability and matching type. Functions may read globals but the VM rejects global writes from function frames.
+Values are integers (`i64`), UTF-8 text, or booleans. Local and global slot metadata carries primitive types and mutability. A first store initializes a binding; later stores require mutability and matching type. The compiler emits `ResetLocals` at each while-body entry for the contiguous local-slot range allocated inside that body, so block-local bindings are fresh on every loop iteration; nested loops reset only their own local ranges. Functions may read globals but the VM rejects global writes from function frames.
 
 ## Runtime checks
 
