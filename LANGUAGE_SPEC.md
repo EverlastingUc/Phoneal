@@ -23,7 +23,7 @@ The canonical syntax reference is [Syntax.md](Syntax.md).
 
 ## Typed intermediate representation
 
-The Rust API exposes `compile_to_ir(source)`, which runs lexing, parsing, semantic analysis, and typed-IR lowering. The IR has explicit primitive types on expressions and declarations, typed function signatures and calls, structured `if` / `while` control flow, and explicit return/break/continue nodes. `ir::validate` checks variable references, declaration and assignment types, mutability, function signatures, boolean conditions, return types, and loop-control placement. The interpreter still executes the AST; bytecode generation and VM execution are later milestones. Source locations are preserved for statements and expressions, including literals.
+The Rust API exposes `compile_to_ir(source)`, which runs lexing, parsing, semantic analysis, and typed-IR lowering. The IR has explicit primitive types on expressions and declarations, typed function signatures and calls, structured `if` / `while` control flow, and explicit return/break/continue nodes. `ir::validate` checks variable references, declaration and assignment types, mutability, function signatures, boolean conditions, return types, and loop-control placement. The interpreter still executes the AST through `run(source)`. The bytecode path is available separately through `compile_to_bytecode(source)` and `run_bytecode(source)`. Source locations are preserved in IR and emitted instructions.
 
 ## Example
 
@@ -35,6 +35,10 @@ function factorial(number: integer) returns integer {
 print(factorial(5));
 ```
 
+## Bytecode compiler and VM
+
+The Rust API exposes `compile_to_bytecode(source)` and `run_bytecode(source)`. The stack VM supports typed local/global frames, function calls and recursion, checked arithmetic, comparisons, branches, loops, short-circuit operators, and runtime mutability/type checks. It enforces instruction, call-depth, operand-stack, individual text-value, and captured-output limits. It is not a security sandbox.
+
 ## Not implemented yet
 
-For-each loops, decimals, lists, maps, user-defined types, exception handling, module imports, capability requests, bytecode, a virtual machine, and sandboxing remain future milestones. Package Manager, Standard Library, and self-hosting compiler are explicitly deferred.
+For-each loops, decimals, lists, maps, user-defined types, exception handling, module imports, capability requests, security-grade bytecode verification, serialization, aggregate heap quotas, wall-clock enforcement, and sandboxing remain future milestones. Package Manager, Standard Library, and self-hosting compiler are explicitly deferred.
