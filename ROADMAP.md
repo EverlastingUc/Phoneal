@@ -114,6 +114,16 @@ CRC-32 detects accidental corruption; it is not cryptographic authentication. PH
 
 The listing is a debugging representation, not a source-level decompiler.
 
+### Phase 18 — CLI Bytecode Workflow
+
+**Implementation in progress; CI verification pending.**
+
+- `phnl build <file.phnl> --output <file.phnb>` compiles, verifies, and serializes a source program.
+- `phnl inspect <file.phnb>` deserializes, verifies, and disassembles a bytecode file.
+- `phnl run-bytecode <file.phnl>` compiles and executes source through the bytecode VM.
+- Existing `phnl run` remains the AST interpreter path; `phnl check` remains the frontend validation path.
+- End-to-end CLI tests cover build, inspect, bytecode execution, checking, and extension validation.
+
 ## Latest verified implementation
 
 - Code commit: `178d358828aeb5ba72a5e24222e19742824e07a6`
