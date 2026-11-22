@@ -35,9 +35,9 @@ function factorial(number: integer) returns integer {
 print(factorial(5));
 ```
 
-## Bytecode compiler and VM
+## Bytecode compiler, VM, and file format
 
-The Rust API exposes `compile_to_bytecode(source)` and `run_bytecode(source)`. The stack VM supports typed local/global frames, function calls and recursion, checked arithmetic, comparisons, branches, loops, short-circuit operators, and runtime mutability/type checks. It enforces instruction, call-depth, operand-stack, individual text-value, and captured-output limits. It is not a security sandbox.
+The Rust API exposes `compile_to_bytecode(source)` and `run_bytecode(source)`. The stack VM supports typed local/global frames, function calls and recursion, checked arithmetic, comparisons, branches, loops, short-circuit operators, and runtime mutability/type checks. It enforces instruction, call-depth, operand-stack, individual text-value, and captured-output limits. The versioned PHNB binary format is available through `bytecode::serialize` and `bytecode::deserialize`; deserialization performs bounds checks, CRC-32 verification, structural validation, and typed stack-flow verification. CRC-32 is not authentication. The VM is not a security sandbox.
 
 ## Not implemented yet
 
