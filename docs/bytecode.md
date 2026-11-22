@@ -1,6 +1,6 @@
 # Phoneal Bytecode Compiler Contract
 
-**Status:** Compiler output is implemented and CI-verified. The VM, bytecode serializer, and security verifier are not implemented.
+**Status:** Compiler and initial VM are implemented and CI-verified. Bytecode serialization and security-grade verification are not implemented.
 
 ## Compilation entry points
 
@@ -22,7 +22,7 @@ The compiler validates the typed IR before lowering it. It then validates the re
 
 ## Instruction contract
 
-The bytecode is stack-oriented.
+The bytecode is stack-oriented. The initial VM is exposed as `bytecode::execute_bytecode(&BytecodeProgram)`; the end-to-end source API is `run_bytecode(source)`.
 
 | Opcode family | Stack effect | Meaning |
 | --- | --- | --- |
@@ -62,6 +62,10 @@ Binary expressions evaluate their left operand before their right operand. Call 
 
 This is deliberately **not** a security verifier. It does not prove stack-depth consistency, validate runtime value types, enforce instruction or memory quotas, restrict host capabilities, or make hostile bytecode safe to execute.
 
-## Deliberate non-goals of this phase
+## VM execution
 
-No bytecode file format, serializer/deserializer, disassembler, VM, sandbox process, capability system, or OS-enforced resource limits are included. The existing `run(source)` API still uses the AST interpreter.
+The initial VM executes these instructions with typed local/global slots, mutability enforcement, function frames, checked arithmetic, and bounded instruction/call/stack/text/output usage. The original `run(source)` API still uses the AST interpreter; `run_bytecode(source)` selects the bytecode path.
+
+## Deliberate non-goals
+
+No bytecode file format, serializer/deserializer, disassembler, security-grade bytecode verifier, sandbox process, capability system, aggregate heap quota, or OS-enforced wall-clock/memory limits are included. Structural validation is not a security boundary.
