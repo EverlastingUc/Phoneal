@@ -68,6 +68,7 @@ The bytecode compiler and initial VM are implemented. `run(source)` still uses t
 - [PHNB file format](docs/bytecode-format.md)
 - [Bytecode VM runtime contract](docs/vm.md)
 - [Command-line interface](docs/cli.md)
+- [Security architecture and threat model](docs/security-architecture.md)
 - [Complete syntax design and implementation status](Syntax.md)
 - [Implemented language subset](LANGUAGE_SPEC.md)
 - [Compiler architecture](docs/architecture.md)
