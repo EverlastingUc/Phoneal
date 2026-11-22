@@ -7,10 +7,16 @@ Phoneal currently uses a Rust-hosted compile-and-interpret pipeline:
     -> Lexer (English keywords, comments, escapes, source locations)
     -> Recursive-descent Parser (AST, precedence, functions, branches, loops)
     -> Semantic Analysis (scopes, primitive types, signatures, branch return paths)
-    -> Interpreter (checked arithmetic, short-circuit logic, function frames)
+        -> AST Interpreter (checked arithmetic, short-circuit logic, function frames)
+        -> Typed IR (typed expressions, declarations, calls, functions, and control flow)
+            -> future bytecode compiler and VM
 
 Front-end admission limits: 1 MiB source, 100,000 tokens, and 256 nested grammar levels.
 ```
+
+## Typed IR boundary
+
+`compile_to_ir(source)` runs the same lexer, parser, and semantic checks as the interpreter pipeline, then lowers the validated AST into a compiler-independent representation. `ir::validate` independently checks typed variable references, declarations, assignments, function calls, returns, boolean conditions, and loop-control placement. The IR retains source locations for statements, expressions, literals, operators, and parameters. The interpreter continues to execute the AST; the IR is not yet consumed by a bytecode compiler or VM.
 
 ## Current invariants
 
