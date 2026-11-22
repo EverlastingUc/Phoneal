@@ -1,5 +1,5 @@
 use super::{
-    lower::binary_type, BinaryOperator, FunctionTable, TypeScope, TypedExpression,
+    lower::binary_type, FunctionTable, TypeScope, TypedExpression,
     TypedExpressionKind, TypedProgram, TypedStatement, TypedStatementKind, UnaryOperator,
 };
 use crate::{
