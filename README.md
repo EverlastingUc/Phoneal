@@ -47,7 +47,7 @@ print(factorial(5));
 ## Pipeline
 
     Source -> Lexer -> Parser -> Semantic Analysis -> AST Interpreter
-                                      \-> Typed IR -> future Bytecode Compiler -> VM
+                                      \-> Typed IR -> Bytecode Compiler -> Bytecode VM
 
 The bytecode compiler and initial VM are implemented. `run(source)` still uses the AST interpreter; `run_bytecode(source)` uses the bytecode VM. The VM has runtime checks and bounded execution, but no security-grade bytecode verifier, heap quota, wall-clock limit, capability isolation, or process sandbox. Do not execute untrusted Phoneal programs with it.
 
@@ -55,7 +55,6 @@ The bytecode compiler and initial VM are implemented. `run(source)` still uses t
 
 - [Bytecode instruction format and compiler contract](docs/bytecode.md)
 - [Bytecode VM runtime contract](docs/vm.md)
-
 - [Complete syntax design and implementation status](Syntax.md)
 - [Implemented language subset](LANGUAGE_SPEC.md)
 - [Compiler architecture](docs/architecture.md)
