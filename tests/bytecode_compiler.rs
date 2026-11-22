@@ -45,6 +45,13 @@ fn disassembler_exposes_function_and_instruction_details() {
 }
 
 #[test]
+fn bytecode_vm_runtime_errors_preserve_source_locations() {
+    let error = run_bytecode("print(1 / 0);").unwrap_err();
+    assert!(error.location.is_some());
+    assert!(error.message.contains("Division by zero"));
+}
+
+#[test]
 fn bytecode_retains_source_locations() {
     let program = compile_to_bytecode("print(42);").unwrap();
     assert!(program.entry.code.iter().any(|instruction| instruction.location.is_some()));
