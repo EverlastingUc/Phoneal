@@ -21,7 +21,11 @@ The canonical syntax reference is [Syntax.md](Syntax.md).
 - Multi-error semantic diagnostics with source locations
 - Single-line `#` comments, block comments, and escaped strings
 
-## Typed intermediate representation\n\nThe Rust API exposes `compile_to_ir(source)`, which runs lexing, parsing, semantic analysis, and typed-IR lowering. The IR has explicit primitive types on expressions and declarations, typed function signatures and calls, structured `if` / `while` control flow, and explicit return/break/continue nodes. `ir::validate` checks expression result types, call signatures, boolean conditions, return types, and loop-control placement. The interpreter still executes the AST; bytecode generation and VM execution are later milestones.\n\nSource locations are preserved when represented by the current AST. Literal AST nodes do not yet carry token locations, so literal IR nodes have no location until the source AST is extended.\n\n## Example
+## Typed intermediate representation
+
+The Rust API exposes `compile_to_ir(source)`, which runs lexing, parsing, semantic analysis, and typed-IR lowering. The IR has explicit primitive types on expressions and declarations, typed function signatures and calls, structured `if` / `while` control flow, and explicit return/break/continue nodes. `ir::validate` checks expression result types, call signatures, boolean conditions, return types, and loop-control placement. The interpreter still executes the AST; bytecode generation and VM execution are later milestones. Source locations are preserved for statements and expressions, including literals.
+
+## Example
 
 ```phoneal
 function factorial(number: integer) returns integer {
