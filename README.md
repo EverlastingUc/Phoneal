@@ -28,6 +28,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - CI-verified executable language examples (see `examples/README.md`)
 - Front-end/interpreter limits: 1 MiB source, 100,000 tokens, 256 nested grammar levels, 128 active calls, and 50,000 interpreter steps
 - Bytecode VM limits: 50,000 instructions, 128 active calls, 100,000 operand-stack values, 1 MiB per text value, and 1 MiB captured output
+- CLI file reads are bounded to 1 MiB for source and 16 MiB for PHNB files
 
 ```phoneal
 function factorial(number: integer) returns integer {
