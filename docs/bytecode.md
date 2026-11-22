@@ -68,9 +68,9 @@ The initial VM executes these instructions with typed local/global slots, mutabi
 
 ## Typed bytecode verification
 
-`bytecode::verify` performs control-flow data-flow analysis with a typed operand stack. It checks stack underflow, operand types, branch merge consistency, call argument and result types, return-stack balance, entry halt balance, and forbids function bytecode from writing globals. The verifier starts each function with an empty relative operand stack; call instructions are checked using the callee signature.
+`bytecode::verify` performs control-flow data-flow analysis with a typed operand stack. It checks stack underflow, operand types, branch merge consistency, definite local initialization, call argument and result types, return-stack balance, entry halt balance, and forbids function bytecode from writing globals. The verifier starts each function with an empty relative operand stack; call instructions are checked using the callee signature.
 
-This verifier is a compiler/runtime correctness layer. It does not prove definite initialization, memory safety for arbitrary host extensions, aggregate heap usage, wall-clock bounds, or sandbox isolation.
+This verifier is a compiler/runtime correctness layer. It does not prove global initialization across all call paths, memory safety for arbitrary host extensions, aggregate heap usage, wall-clock bounds, or sandbox isolation.
 
 ## Disassembly
 
