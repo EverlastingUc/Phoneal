@@ -27,7 +27,7 @@ for the authoritative implementation-status list.
 
 ### Bytecode compiler input
 
-`bytecode_compiler.phnl` is a representative source program for the bytecode compiler API. It is not included in the interpreter-run script because the CLI does not yet expose bytecode compilation or VM execution. Integration tests exercise it through the Rust API.
+`bytecode_compiler.phnl` is a representative source program for the bytecode compiler API. It is not included in the interpreter-run script because the CLI does not yet expose bytecode compilation or VM execution. Integration tests exercise it through the Rust API. See [bytecode.md](../docs/bytecode.md) for the instruction contract.
 
 ### Typed IR
 
