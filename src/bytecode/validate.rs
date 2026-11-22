@@ -1,4 +1,5 @@
 use super::{BytecodeFunction, BytecodeProgram, Opcode};
+use std::collections::HashSet;
 use crate::diagnostic::{Diagnostic, DiagnosticStage};
 
 fn invalid(message: impl Into<String>) -> Diagnostic {
@@ -15,6 +16,7 @@ fn validate_function(
     }
     if function.local_types.len() != function.local_count
         || function.local_mutability.len() != function.local_count
+        || function.local_declarations.len() != function.local_count
         || function.parameter_types.len() != function.parameter_count
         || function.parameter_count > function.local_count
     {
@@ -24,9 +26,22 @@ fn validate_function(
         return Err(invalid(format!("Bytecode function '{}' has no return type", function.name)));
     }
     if function.parameter_types.iter().enumerate().any(|(slot, ty)| {
-        function.local_types.get(slot) != Some(ty) || function.local_mutability.get(slot) != Some(&false)
+        function.local_types.get(slot) != Some(ty)
+            || function.local_mutability.get(slot) != Some(&false)
+            || function.local_declarations.get(slot) != Some(&None)
     }) {
         return Err(invalid(format!("Bytecode function '{}' has inconsistent parameter slots", function.name)));
+    }
+    let mut declaration_offsets = HashSet::new();
+    for slot in function.parameter_count..function.local_count {
+        let offset = function.local_declarations[slot]
+            .ok_or_else(|| invalid(format!("Local slot {slot} has no declaration instruction")))?;
+        if !matches!(function.code.get(offset).map(|instruction| &instruction.opcode), Some(Opcode::StoreLocal(target)) if *target == slot) {
+            return Err(invalid(format!("Local slot {slot} has an invalid declaration instruction")));
+        }
+        if !declaration_offsets.insert(offset) {
+            return Err(invalid("Multiple local slots share one declaration instruction"));
+        }
     }
     if is_entry && function.return_type.is_some() {
         return Err(invalid("Bytecode entry must not declare a function return type"));
@@ -49,13 +64,6 @@ fn validate_function(
             }
             Opcode::LoadLocal(slot) | Opcode::StoreLocal(slot) if *slot >= function.local_count => {
                 return Err(invalid(format!("Local slot {slot} is outside function '{}' frame", function.name)));
-            }
-            Opcode::ResetLocals { start, count } => {
-                let end = start.checked_add(*count)
-                    .ok_or_else(|| invalid("Local reset range overflows"))?;
-                if *start < function.parameter_count || end > function.local_count {
-                    return Err(invalid("Local reset range is outside the non-parameter local frame"));
-                }
             }
 
             Opcode::LoadGlobal(slot) | Opcode::StoreGlobal(slot) if *slot >= program.global_count => {
