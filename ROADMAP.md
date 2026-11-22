@@ -105,7 +105,7 @@ CRC-32 detects accidental corruption; it is not cryptographic authentication. PH
 
 ### Phase 17 — Bytecode Disassembler
 
-**Implementation in progress; CI verification pending.**
+**Complete and CI-verified.**
 
 - Public API: `bytecode::disassemble(&BytecodeProgram)`.
 - Verifies the program before producing output.
@@ -116,9 +116,9 @@ The listing is a debugging representation, not a source-level decompiler.
 
 ## Latest verified implementation
 
-- Code commit: `0a3f015e661ff86ffacc8e13e04df86ad70ea87e`
-- CI: [Phoneal CI #45058936495](https://github.com/EverlastingUc/Phoneal/actions/runs/45058936495)
-- Tests: **139 passed, 0 failed** (88 unit, 42 compiler-pipeline, 6 bytecode integration, 3 typed IR)
+- Code commit: `178d358828aeb5ba72a5e24222e19742824e07a6`
+- CI: [Phoneal CI #45059133490](https://github.com/EverlastingUc/Phoneal/actions/runs/45059133490)
+- Tests: **143 passed, 0 failed** (91 unit, 42 compiler-pipeline, 7 bytecode integration, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
