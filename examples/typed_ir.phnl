@@ -1,0 +1,9 @@
+function square(value: integer) returns integer {
+    return value * value;
+}
+
+create mutable count = 1;
+while (count <= 3) {
+    print(square(count));
+    set count = count + 1;
+}
