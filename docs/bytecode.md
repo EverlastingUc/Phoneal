@@ -72,6 +72,10 @@ The initial VM executes these instructions with typed local/global slots, mutabi
 
 This verifier is a compiler/runtime correctness layer. It does not prove definite initialization, memory safety for arbitrary host extensions, aggregate heap usage, wall-clock bounds, or sandbox isolation.
 
+## PHNB file serialization
+
+The version-1 PHNB container is documented in [bytecode-format.md](bytecode-format.md). `bytecode::serialize` verifies and serializes a program; `bytecode::deserialize` checks the header, bounds, CRC-32, payload structure, and typed bytecode flow before returning it. CRC-32 is not cryptographic authentication.
+
 ## Deliberate non-goals
 
 No bytecode file format, serializer/deserializer, disassembler, security-grade bytecode verifier, sandbox process, capability system, aggregate heap quota, or OS-enforced wall-clock/memory limits are included. Structural validation is not a security boundary.
