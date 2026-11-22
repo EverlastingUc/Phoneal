@@ -211,6 +211,16 @@ mod tests {
     }
 
     #[test]
+    fn rejects_incompatible_branch_stack_states() {
+        let mut program = compile_to_bytecode(
+            "if (true) { print(1); } else { print(2); }",
+        ).unwrap();
+        let else_print = program.entry.code.iter().rposition(|instruction| matches!(&instruction.opcode, Opcode::Print)).unwrap();
+        program.entry.code[else_print].opcode = Opcode::PushInteger(2);
+        assert!(verify(&program).unwrap_err().message.contains("incompatible operand stacks"));
+    }
+
+    #[test]
     fn rejects_global_writes_from_functions() {
         let mut program = compile_to_bytecode("create mutable total = 0; function read() returns integer { return total; } print(read());").unwrap();
         let function = &mut program.functions[0];
