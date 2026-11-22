@@ -1,6 +1,6 @@
 # Phoneal Security Architecture
 
-**Status:** Threat model and target architecture documented. Deny-by-default capability policy primitives exist, but no process sandbox or host-operation enforcement is implemented yet.
+**Status:** Threat model, capability policy primitives, and bounded IPC frame primitives are implemented. No worker process, broker, or OS sandbox is implemented yet.
 
 This document defines the boundary required before Phoneal can be described as safe for untrusted programs. The current AST interpreter and bytecode VM are experimental in-process execution engines. Runtime checks and bytecode verification are defense-in-depth, not a security boundary.
 
@@ -149,6 +149,10 @@ Before the sandbox can be called functional, the launcher must:
 Platform-specific enforcement must be implemented and tested independently. A portable interface must not silently fall back to an unrestricted process when a platform adapter is unavailable.
 
 ## 7. IPC protocol requirements
+
+The Rust API exposes `phoneal::security::ipc::{Frame, MessageKind}`. Version 1 frames use the `PHIP` magic, fixed-width little-endian header, request ID, payload length, CRC-32, and a 1 MiB payload cap. Encode/decode tests cover all message kinds and malformed headers.
+
+This is a framing layer only: no pipe/socket transport, message-specific payload schema, request sequencing, broker, or worker process is implemented.
 
 The worker protocol must be versioned and length-prefixed. Every frame must have:
 
