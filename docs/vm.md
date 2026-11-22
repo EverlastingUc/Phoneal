@@ -5,7 +5,7 @@
 ## Entry points
 
 - `run_bytecode(source)`: lexes, parses, checks semantics, lowers to typed IR, compiles bytecode, and executes it.
-- `bytecode::execute_bytecode(&BytecodeProgram)`: executes an existing bytecode program after structural validation.
+- `bytecode::execute_bytecode(&BytecodeProgram)`: executes an existing bytecode program after structural and typed stack-flow verification.
 
 The existing `run(source)` API continues to use the AST interpreter.
 
@@ -21,7 +21,7 @@ Values are integers (`i64`), UTF-8 text, or booleans. Local and global slot meta
 - Division/remainder by zero diagnostics and overflow diagnostics.
 - Runtime type checks for arithmetic, comparisons, conditions, function arguments, function returns, and slot stores.
 - Equality operands must have the same primitive type.
-- Jump targets and slot/call references are structurally checked before execution.
+- Jump targets and slot/call references are structurally checked; typed stack-flow verification also runs before execution.
 - Function return requires a balanced operand stack relative to its call frame.
 - Reaching an `Unreachable` function terminator is a runtime error.
 
@@ -39,6 +39,6 @@ The VM returns deterministic diagnostics when these limits are exceeded. These a
 
 ## Security boundary
 
-This VM is not safe for untrusted programs or hostile bytecode. Structural validation is not a security-grade verifier; it does not prove stack-depth consistency for arbitrary programs or establish memory safety/resource isolation. The VM has no host filesystem/network/process capabilities, but no process sandbox is provided either. Treat it as an experimental execution engine, not a sandbox.
+This VM is not safe for untrusted programs or hostile bytecode. Structural validation and typed stack-flow verification catch malformed instruction streams, but they do not prove definite initialization or establish memory safety/resource isolation. The VM has no host filesystem/network/process capabilities, but no process sandbox is provided either. Treat it as an experimental execution engine, not a sandbox.
 
 A production sandbox requires independent bytecode verification, aggregate resource accounting, wall-clock enforcement outside the VM, deny-by-default capabilities, process isolation, hostile-input testing, and security review.
