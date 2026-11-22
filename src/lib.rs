@@ -36,6 +36,12 @@ pub fn compile(source: &str) -> Result<Vec<Statement>, Diagnostic> {
     compile_with_diagnostics(source).map_err(|mut diagnostics| diagnostics.remove(0))
 }
 
+/// Compiles source through semantic analysis into validated typed IR.
+pub fn compile_to_ir(source: &str) -> Result<ir::TypedProgram, Vec<Diagnostic>> {
+    let statements = compile_with_diagnostics(source)?;
+    ir::lower(&statements).map_err(|diagnostic| vec![diagnostic])
+}
+
 pub fn run(source: &str) -> Result<Vec<String>, Diagnostic> {
     let statements = compile(source)?;
     execute(&statements)
