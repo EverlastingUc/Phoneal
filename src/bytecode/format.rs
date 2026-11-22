@@ -418,7 +418,7 @@ mod tests {
     #[test]
     fn serializes_and_deserializes_bytecode_losslessly() {
         let program = compile_to_bytecode(
-            "function double(value: integer) returns integer { return value * 2; } create mutable count = 0; while (count < 3) { set count = double(count + 1); } print(count);",
+            "function double(value: integer) returns integer { return value * 2; } create mutable count = 0; while (count < 3) { create snapshot = count; set count = double(count + 1); print(snapshot); } print(count);",
         ).unwrap();
         let bytes = serialize(&program).unwrap();
         assert_eq!(deserialize(&bytes).unwrap(), program);
