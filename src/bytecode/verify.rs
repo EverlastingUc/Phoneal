@@ -103,7 +103,7 @@ fn verify_function(
                 state.initialized_locals[*slot] = true;
             }
             Opcode::ResetLocals { start, count } => {
-                let end = start + count;
+                let end = *start + *count;
                 state.initialized_locals[*start..end].fill(false);
             }
 
