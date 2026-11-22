@@ -56,7 +56,7 @@ pub struct BytecodeFunction {
     pub name: String,
     pub parameter_count: usize,
     pub local_count: usize,
-    pub return_type: PhonealType,
+    pub return_type: Option<PhonealType>,
     pub code: Vec<Instruction>,
 }
 
@@ -329,7 +329,7 @@ pub fn compile(program: &TypedProgram) -> Result<BytecodeProgram, Diagnostic> {
             name: "<entry>".to_owned(),
             parameter_count: 0,
             local_count: entry.local_count,
-            return_type: PhonealType::Boolean,
+            return_type: None,
             code: entry.code,
         },
         global_count: globals.len(),
@@ -351,7 +351,7 @@ fn compile_function(
         name: function.name.clone(),
         parameter_count: function.parameters.len(),
         local_count: compiler.local_count,
-        return_type: function.return_type,
+        return_type: Some(function.return_type),
         code: compiler.code,
     })
 }
