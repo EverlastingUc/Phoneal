@@ -28,7 +28,7 @@ Phoneal does not yet have:
 - a security-grade bytecode verifier or a proof of stack-depth/type safety for arbitrary bytecode;
 - aggregate heap accounting or OS-enforced memory limits;
 - wall-clock timeouts enforced outside the VM process;
-- a deny-by-default capability system;
+- a capability broker or enforcement path (only deny-by-default policy primitives exist);
 - filesystem, network, process, or environment isolation;
 - a sandbox process boundary;
 - hostile-input fuzzing and independent security review.
