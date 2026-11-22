@@ -14,11 +14,11 @@ fn compiles_functions_and_control_flow_to_typed_ir() {
     assert_eq!(program.functions.len(), 1);
     assert_eq!(program.functions[0].return_type, PhonealType::Integer);
     assert!(matches!(
-        program.functions[0].body[0].kind,
+        &program.functions[0].body[0].kind,
         TypedStatementKind::Return(_)
     ));
     assert!(matches!(
-        program.statements[1].kind,
+        &program.statements[1].kind,
         TypedStatementKind::While { .. }
     ));
 }
@@ -31,7 +31,7 @@ fn typed_ir_preserves_expression_result_types() {
         TypedStatementKind::Print(expression) => {
             assert_eq!(expression.ty, PhonealType::Boolean);
             assert!(matches!(
-                expression.kind,
+                &expression.kind,
                 TypedExpressionKind::Binary { .. }
             ));
         }
