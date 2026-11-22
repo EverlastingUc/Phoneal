@@ -970,7 +970,7 @@ mod tests {
             "function choose(flag: boolean) returns integer { if (flag) { return 1; } else { return 2; } }",
         )
         .unwrap();
-        program.functions[0].body.pop();
+        assert!(program.functions[0].body.pop().is_some());
         assert!(validate(&program).is_err());
     }
 
