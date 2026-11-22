@@ -405,7 +405,7 @@ phnl build <file.phnl> --output <file.phnb>
 phnl inspect <file.phnb>
 ```
 
-The exact bytecode format and build options will be documented when implemented. Running untrusted programs must require an explicit sandbox policy or a restrictive built-in default.
+Implemented CLI commands: `phnl build <file.phnl> --output <file.phnb>`, `phnl inspect <file.phnb>`, and `phnl run-bytecode <file.phnl>`. `phnl run` still selects the AST interpreter; `phnl run-bytecode` selects the bytecode VM. The `--policy` argument shown above is a future design target, not an implemented sandbox control. Running untrusted programs must require an explicit sandbox policy or a restrictive built-in default.
 
 ## 16. Reserved words
 
