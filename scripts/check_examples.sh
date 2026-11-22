@@ -9,6 +9,7 @@ examples=(
   examples/strings.phnl
   examples/mutable.phnl
   examples/loops.phnl
+  examples/typed_ir.phnl
 )
 for example in "${examples[@]}"; do
   echo "Checking executable example: $example"
