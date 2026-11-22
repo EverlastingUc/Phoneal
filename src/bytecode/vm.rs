@@ -425,7 +425,7 @@ mod tests {
         let function = &mut program.functions[0];
         function.code.insert(0, crate::bytecode::Instruction { opcode: Opcode::PushInteger(2), location: None });
         function.code.insert(1, crate::bytecode::Instruction { opcode: Opcode::StoreGlobal(0), location: None });
-        assert!(execute(&program).unwrap_err().message.contains("cannot mutate global"));
+        assert!(execute(&program).unwrap_err().message.contains("write global"));
     }
 
     #[test]
