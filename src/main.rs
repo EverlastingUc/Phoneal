@@ -4,7 +4,7 @@ const MAX_SOURCE_BYTES: usize = 1024 * 1024;
 const MAX_BYTECODE_BYTES: usize = 16 * 1024 * 1024;
 
 fn print_usage() {
-    eprintln!("Phoneal 0.1.0 — Rust-hosted language prototype");
+    eprintln!("Phoneal {} — Rust-hosted language prototype", env!("CARGO_PKG_VERSION"));
     eprintln!("Usage:");
     eprintln!("  phnl run <file.phnl>");
     eprintln!("  phnl run-bytecode <file.phnl>");
@@ -115,6 +115,14 @@ fn inspect_bytecode(path: &str) -> Result<(), String> {
 fn main() {
     let arguments: Vec<String> = env::args().collect();
     let result = match arguments.as_slice() {
+        [_, flag] if flag == "--help" || flag == "-h" => {
+            print_usage();
+            Ok(())
+        }
+        [_, flag] if flag == "--version" || flag == "-V" => {
+            println!("phnl {}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        }
         [_, command, source] if command == "run" => run_source(source, false),
         [_, command, source] if command == "run-bytecode" => run_source(source, true),
         [_, command, source] if command == "check" => check_source(source),
