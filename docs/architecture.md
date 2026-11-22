@@ -9,14 +9,15 @@ Phoneal currently uses a Rust-hosted compile-and-interpret pipeline:
     -> Semantic Analysis (scopes, primitive types, signatures, branch return paths)
         -> AST Interpreter (checked arithmetic, short-circuit logic, function frames)
         -> Typed IR (typed expressions, declarations, calls, functions, and control flow)
-            -> future bytecode compiler and VM
+            -> Bytecode Compiler (stack instructions, slots, calls, jumps)
+                -> future bytecode verifier and VM
 
 Front-end admission limits: 1 MiB source, 100,000 tokens, and 256 nested grammar levels.
 ```
 
 ## Typed IR boundary
 
-`compile_to_ir(source)` runs the same lexer, parser, and semantic checks as the interpreter pipeline, then lowers the validated AST into a compiler-independent representation. `ir::validate` independently checks typed variable references, declarations, assignments, function calls, returns, boolean conditions, and loop-control placement. The IR retains source locations for statements, expressions, literals, operators, and parameters. The interpreter continues to execute the AST; the IR is not yet consumed by a bytecode compiler or VM.
+`compile_to_ir(source)` runs the same lexer, parser, and semantic checks as the interpreter pipeline, then lowers the validated AST into a compiler-independent representation. `ir::validate` independently checks typed variable references, declarations, assignments, function calls, returns, boolean conditions, and loop-control placement. The IR retains source locations for statements, expressions, literals, operators, and parameters. The interpreter continues to execute the AST. `bytecode::compile(&ir)` and `compile_to_bytecode(source)` lower validated IR into a stack-oriented instruction stream. The compiler emits typed arithmetic operations, local/global slot access, function calls, conditional/loop jumps, and short-circuit branches. Jump targets are absolute instruction offsets within each function. This output is a compiler artifact only: no bytecode verifier, serializer, or VM exists yet.
 
 ## Current invariants
 
