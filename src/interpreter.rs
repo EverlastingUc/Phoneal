@@ -136,9 +136,9 @@ fn evaluate_expression(
     steps: &mut usize,
 ) -> Result<Value, Diagnostic> {
     match e {
-        Expression::Integer(v) => Ok(Value::Integer(*v)),
-        Expression::String(v) => Ok(Value::String(v.clone())),
-        Expression::Boolean(v) => Ok(Value::Boolean(*v)),
+        Expression::Integer(v, _) => Ok(Value::Integer(*v)),
+        Expression::String(v, _) => Ok(Value::String(v.clone())),
+        Expression::Boolean(v, _) => Ok(Value::Boolean(*v)),
         Expression::Variable { name, location } => lookup(env, name)
             .ok_or_else(|| runtime_error(format!("Undefined variable '{name}'"), location)),
         Expression::Group(inner) => evaluate_expression(inner, env, funcs, out, depth, steps),
