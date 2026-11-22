@@ -1,0 +1,15 @@
+# Bytecode compiler input example.
+# This file demonstrates constructs supported by the Typed IR -> bytecode compiler.
+
+function twice(value: integer) returns integer {
+    return value * 2;
+}
+
+create mutable count = 0;
+while (count < 3) {
+    set count = count + 1;
+    if (count == 2) {
+        continue;
+    }
+    print(twice(count));
+}
