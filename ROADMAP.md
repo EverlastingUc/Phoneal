@@ -146,6 +146,17 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 - `phnl --version` and `phnl -V` print the package version from Cargo metadata.
 - CLI integration tests cover both flags.
 
+### Phase 21 — Loop-Scoped Local Lifetimes
+
+**Complete; CI verification pending.**
+
+- Added `ResetLocals` bytecode for the contiguous local-slot range allocated inside each while body.
+- The VM clears those slots at the beginning of every iteration, preserving fresh immutable/mutable bindings across repeated block execution.
+- Nested loops reset only their own body range while outer-loop locals remain intact.
+- `break` and `continue` flow back through the loop condition/body entry, so the next iteration performs the reset.
+- Typed verification tracks definite local initialization and clears initialization state at reset points.
+- Tests cover immutable loop locals, nested loops, `continue`, serialization, and disassembly.
+
 ## Latest verified implementation
 
 - Code commit: `677c795c79a68c27ea15d5e1e3bde8bcc01f5924`
