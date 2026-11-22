@@ -44,6 +44,9 @@ print(factorial(5));
     cargo run -- run examples/factorial.phnl
     cargo run -- run examples/loops.phnl
     cargo run -- check examples/functions.phnl
+    cargo run -- run-bytecode examples/loops.phnl
+    cargo run -- build examples/factorial.phnl --output factorial.phnb
+    cargo run -- inspect factorial.phnb
     cargo test
     bash scripts/check_examples.sh
 
