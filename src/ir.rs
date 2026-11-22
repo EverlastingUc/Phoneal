@@ -738,7 +738,7 @@ fn validate_statements(
 
 fn validate_expression(
     expression: &TypedExpression,
-    signatures: &HashMap<String, (Vec<PhonealType>, PhonealType)>,
+    signatures: &FunctionTable,
     scopes: &[TypeScope],
 ) -> Result<(), Diagnostic> {
     let fail = |message: &str| Lowerer::error(message, expression.location.as_ref());
@@ -914,6 +914,18 @@ mod tests {
             location: Some(location),
         };
         assert!(validate(&program).is_err());
+    }
+
+    #[test]
+    fn lowers_continue_break_and_return_inside_nested_control_flow() {
+        let program = lower_source(
+            "function select(value: integer) returns integer { while (true) { if (value == 0) { continue; } break; } return value; }",
+        )
+        .unwrap();
+        assert!(matches!(
+            &program.functions[0].body[0].kind,
+            TypedStatementKind::While { .. }
+        ));
     }
 
     #[test]
