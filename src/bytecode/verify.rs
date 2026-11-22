@@ -100,11 +100,14 @@ fn verify_function(
             }
             Opcode::StoreLocal(slot) => {
                 pop_type(&mut state.stack, Some(function.local_types[*slot]))?;
+                let is_declaration = function.local_declarations[*slot] == Some(ip);
+                if !is_declaration && !state.initialized_locals[*slot] {
+                    return Err(invalid(format!("Assignment to uninitialized local slot {slot}")));
+                }
+                if !is_declaration && !function.local_mutability[*slot] {
+                    return Err(invalid(format!("Assignment to immutable local slot {slot}")));
+                }
                 state.initialized_locals[*slot] = true;
-            }
-            Opcode::ResetLocals { start, count } => {
-                let end = *start + *count;
-                state.initialized_locals[*start..end].fill(false);
             }
 
             Opcode::LoadGlobal(slot) => push_type(&mut state.stack, program.global_types[*slot])?,
@@ -204,8 +207,8 @@ fn verify_function(
 
 /// Verifies stack types and control-flow stack consistency for compiler bytecode.
 ///
-/// This is a typed bytecode verifier, not a complete security boundary. It does not prove
-/// definite initialization, enforce aggregate memory quotas, or isolate host resources.
+/// This is a typed bytecode verifier, not a complete security boundary. It tracks local-slot initialization
+/// but does not prove global initialization across all call paths or isolate host resources.
 pub fn verify(program: &BytecodeProgram) -> Result<(), Diagnostic> {
     validate_structure(program)?;
     for function in &program.functions {
@@ -253,24 +256,31 @@ mod tests {
     }
 
     #[test]
-    fn rejects_reads_from_uninitialized_local_slots() {
-        let mut program = compile_to_bytecode(
-            "function read() returns integer { create local = 1; return local; } print(read());",
-        ).unwrap();
-        let function = &mut program.functions[0];
-        function.code[1].opcode = Opcode::Pop;
-        assert!(verify(&program).unwrap_err().message.contains("uninitialized local"));
-    }
-
-    #[test]
-    fn merges_local_initialization_across_branches() {
+    fn rejects_store_to_uninitialized_local_slot() {
         let mut program = compile_to_bytecode(
             "function maybe(flag: boolean) returns integer { create mutable value = 0; if (flag) { set value = 1; } return value; } print(maybe(true));",
         ).unwrap();
         let function = &mut program.functions[0];
-        let first_store = function.code.iter().position(|instruction| matches!(&instruction.opcode, Opcode::StoreLocal(1))).unwrap();
-        function.code[first_store].opcode = Opcode::Pop;
+        let stores = function.code.iter().enumerate()
+            .filter_map(|(offset, instruction)| {
+                matches!(&instruction.opcode, Opcode::StoreLocal(1)).then_some(offset)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(stores.len(), 2);
+        function.local_declarations[1] = Some(stores[1]);
         assert!(verify(&program).unwrap_err().message.contains("uninitialized local"));
+    }
+
+    #[test]
+    fn rejects_store_to_immutable_local_outside_declaration() {
+        let mut program = compile_to_bytecode(
+            "function value() returns integer { create answer = 1; return answer; } print(value());",
+        ).unwrap();
+        let function = &mut program.functions[0];
+        let return_offset = function.code.iter().position(|instruction| matches!(&instruction.opcode, Opcode::Return)).unwrap();
+        function.code.insert(return_offset, Opcode::PushInteger(2).into_instruction());
+        function.code.insert(return_offset + 1, Opcode::StoreLocal(0).into_instruction());
+        assert!(verify(&program).unwrap_err().message.contains("immutable local"));
     }
 
     #[test]
