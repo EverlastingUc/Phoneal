@@ -869,6 +869,51 @@ mod tests {
     }
 
     #[test]
+    fn validator_rejects_undefined_variables_and_immutable_assignments() {
+        let mut program = lower_source("print(1);").unwrap();
+        if let TypedStatementKind::Print(expression) = &mut program.statements[0].kind {
+            expression.kind = TypedExpressionKind::Variable("missing".into());
+        }
+        assert!(validate(&program).is_err());
+
+        let mut program = lower_source("create value = 1;").unwrap();
+        let location = SourceLocation { line: 1, column: 1 };
+        program.statements.push(TypedStatement {
+            kind: TypedStatementKind::Assign {
+                name: "value".into(),
+                value: TypedExpression {
+                    kind: TypedExpressionKind::Integer(2),
+                    ty: PhonealType::Integer,
+                    location: Some(location.clone()),
+                },
+            },
+            location: Some(location),
+        });
+        assert!(validate(&program).is_err());
+    }
+
+    #[test]
+    fn validator_rejects_function_mutation_of_outer_bindings() {
+        let mut program = lower_source(
+            "create mutable total = 0; function update() returns integer { return total; }",
+        )
+        .unwrap();
+        let location = SourceLocation { line: 1, column: 1 };
+        program.functions[0].body[0] = TypedStatement {
+            kind: TypedStatementKind::Assign {
+                name: "total".into(),
+                value: TypedExpression {
+                    kind: TypedExpressionKind::Integer(1),
+                    ty: PhonealType::Integer,
+                    location: Some(location.clone()),
+                },
+            },
+            location: Some(location),
+        };
+        assert!(validate(&program).is_err());
+    }
+
+    #[test]
     fn rejects_invalid_source_before_lowering() {
         assert!(lower_source("while (1) { print(1); }").is_err());
         assert!(lower_source("break;").is_err());
