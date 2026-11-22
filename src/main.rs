@@ -8,6 +8,7 @@ fn print_usage() {
     eprintln!("  phnl check <file.phnl>");
     eprintln!("  phnl build <file.phnl> --output <file.phnb>");
     eprintln!("  phnl inspect <file.phnb>");
+    eprintln!("  phnl execute <file.phnb>");
 }
 
 fn read_source(path: &str) -> Result<String, String> {
@@ -73,6 +74,18 @@ fn build_bytecode(source_path: &str, output_path: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn execute_bytecode_file(path: &str) -> Result<(), String> {
+    let bytes = read_bytecode(path)?;
+    let program = phoneal::bytecode::deserialize(&bytes)
+        .map_err(|error| format!("Phoneal: {error}"))?;
+    let lines = phoneal::bytecode::execute_bytecode(&program)
+        .map_err(|error| format!("Phoneal: {error}"))?;
+    for line in lines {
+        println!("{line}");
+    }
+    Ok(())
+}
+
 fn inspect_bytecode(path: &str) -> Result<(), String> {
     let bytes = read_bytecode(path)?;
     let program = phoneal::bytecode::deserialize(&bytes)
@@ -93,6 +106,7 @@ fn main() {
             build_bytecode(source, output)
         }
         [_, command, file] if command == "inspect" => inspect_bytecode(file),
+        [_, command, file] if command == "execute" => execute_bytecode_file(file),
         _ => {
             print_usage();
             process::exit(2);
