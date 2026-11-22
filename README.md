@@ -47,7 +47,7 @@ print(factorial(5));
     Source -> Lexer -> Parser -> Semantic Analysis -> AST Interpreter
                                       \-> Typed IR -> future Bytecode Compiler -> VM
 
-The bytecode compiler is an intermediate compiler stage only. There is no bytecode verifier or VM yet, and the interpreter still executes the AST. This is not a sandbox. Do not execute untrusted Phoneal programs with it.
+The bytecode compiler is an intermediate compiler stage only. There is no security-grade bytecode verifier or VM yet, and the interpreter still executes the AST. This is not a sandbox. Do not execute untrusted Phoneal programs with it.
 
 ## Documentation
 
