@@ -116,6 +116,15 @@ mod tests {
     }
 
     #[test]
+    fn disassembles_loop_local_reset_ranges() {
+        let program = compile_to_bytecode(
+            "create mutable count = 0; while (count < 2) { create snapshot = count; set count = count + 1; print(snapshot); }",
+        ).unwrap();
+        let listing = disassemble(&program).unwrap();
+        assert!(listing.contains("ResetLocals 0..1"));
+    }
+
+    #[test]
     fn disassembles_jump_targets() {
         let program = compile_to_bytecode("if (true) { print(1); } else { print(2); }").unwrap();
         let listing = disassemble(&program).unwrap();
