@@ -78,4 +78,4 @@ The version-1 PHNB container is documented in [bytecode-format.md](bytecode-form
 
 ## Deliberate non-goals
 
-No bytecode file format, serializer/deserializer, disassembler, security-grade bytecode verifier, sandbox process, capability system, aggregate heap quota, or OS-enforced wall-clock/memory limits are included. Structural validation is not a security boundary.
+No disassembler, security-grade bytecode verifier, sandbox process, capability system, aggregate heap quota, or OS-enforced wall-clock/memory limits are included. Structural validation is not a security boundary.
