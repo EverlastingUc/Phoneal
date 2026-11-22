@@ -12,7 +12,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - `integer`, `text`, and `boolean` primitive types
 - Arithmetic, comparisons, and English logical operators (`and`, `or`, `not`)
 - `if` / `else if` / `else` and `while` with boolean-only conditions
-- Nested loops with `break` and `continue
+- Nested loops with `break` and `continue`
 - Nested lexical scopes
 - Typed top-level `function` declarations using `returns`
 - Function calls, recursion, and control-flow-aware return checking
@@ -44,7 +44,7 @@ print(factorial(5));
 ## Pipeline
 
     Source -> Lexer -> Parser -> Semantic Analysis -> AST Interpreter
-                                      \\-> Typed IR -> future Bytecode Compiler -> VM
+                                      \-> Typed IR -> future Bytecode Compiler -> VM
 
 This is still an interpreter prototype. It is not a bytecode compiler, virtual machine, or sandbox. Do not execute untrusted Phoneal programs with it.
 
