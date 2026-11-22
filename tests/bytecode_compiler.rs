@@ -34,6 +34,17 @@ fn serialized_bytecode_can_be_loaded_and_executed() {
 }
 
 #[test]
+fn disassembler_exposes_function_and_instruction_details() {
+    let program = compile_to_bytecode(
+        "function twice(value: integer) returns integer { return value * 2; } print(twice(4));",
+    ).unwrap();
+    let listing = phoneal::bytecode::disassemble(&program).unwrap();
+    assert!(listing.contains("twice(integer) -> integer"));
+    assert!(listing.contains("Call #0 twice"));
+    assert!(listing.contains("Multiply"));
+}
+
+#[test]
 fn bytecode_retains_source_locations() {
     let program = compile_to_bytecode("print(42);").unwrap();
     assert!(program.entry.code.iter().any(|instruction| instruction.location.is_some()));
