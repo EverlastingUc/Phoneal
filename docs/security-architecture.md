@@ -1,6 +1,6 @@
 # Phoneal Security Architecture
 
-**Status:** Threat model and target architecture documented. No process sandbox or capability enforcement is implemented yet.
+**Status:** Threat model and target architecture documented. Deny-by-default capability policy primitives exist, but no process sandbox or host-operation enforcement is implemented yet.
 
 This document defines the boundary required before Phoneal can be described as safe for untrusted programs. The current AST interpreter and bytecode VM are experimental in-process execution engines. Runtime checks and bytecode verification are defense-in-depth, not a security boundary.
 
@@ -105,6 +105,10 @@ A capability grant must be narrow, per-run, and revocable when the worker exits.
 File access must defend against path traversal, symlink escape, hard-link surprises, and time-of-check/time-of-use races. Canonicalizing a path and then opening it later is not sufficient by itself; implementation must use race-resistant OS APIs and verify the opened object remains beneath the granted root.
 
 Network access must resolve and validate destinations at connection time, not merely trust a hostname string checked earlier. Redirects, DNS rebinding, IPv4/IPv6 variants, and local/private address ranges need explicit policy.
+
+### Current policy API
+
+The Rust API exposes `phoneal::security::Capability`, `CapabilityPolicy`, and `CapabilityDenied`. `CapabilityPolicy::default()` denies every capability; grants are explicit and revocable. This is a policy data structure only. No VM opcode, standard-library function, host interface, or broker currently consumes it, and it must not be mistaken for OS-enforced authority.
 
 ## 5. Resource enforcement
 
