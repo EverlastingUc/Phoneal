@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod bytecode;
+pub mod security;
 pub mod diagnostic;
 pub mod interpreter;
 pub mod ir;
