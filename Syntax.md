@@ -423,7 +423,7 @@ The Rust prototype rejects source files larger than **1 MiB**, more than **100,0
 
 The current Rust prototype implements the following subset of this specification:
 
-- Implemented: typed IR lowering and structural validation are available through the Rust `compile_to_ir` API. The IR represents typed expressions, declarations, assignments, calls, functions, branches, loops, and loop-control statements. Source locations are retained on statements and expressions, including literals.
+- In progress (CI verification pending): typed IR lowering and structural validation are available through the Rust `compile_to_ir` API. The IR represents typed expressions, declarations, assignments, calls, functions, branches, loops, and loop-control statements. Source locations are retained on statements and expressions, including literals.
 - Implemented: `create` (with optional `mutable` and optional `: integer`, `: text`, or `: boolean` annotations), `set` assignment with mutability and type checks, `print`, `function`, `returns`, `integer`, `text`, `boolean`, integer/text/boolean literals, arithmetic, comparisons, `and`/`or`/`not`, `if`/`else if`/`else`, `while`, `break`, `continue`, typed function calls and returns, nested lexical scopes, source-located diagnostics, comments, escaped strings, and front-end source/token/nesting limits, call-depth limit, and per-run execution-step budget.
 - Not yet implemented: for-each loops, decimal values, lists, maps, user-defined types, error handling, capability requests, bytecode, VM, and sandbox.
 - Explicitly deferred by project owner: Package Manager, Standard Library, and self-hosting compiler.
