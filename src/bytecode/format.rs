@@ -5,7 +5,7 @@ use crate::{
 };
 
 const MAGIC: &[u8; 4] = b"PHNB";
-const VERSION: u16 = 1;
+const VERSION: u16 = 2;
 const HEADER_LENGTH: usize = 14;
 const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
 const MAX_STRING_BYTES: usize = 1024 * 1024;
@@ -62,9 +62,10 @@ fn write_function(output: &mut Vec<u8>, function: &BytecodeFunction) -> Result<(
         write_u8(output, type_tag(*ty));
     }
     write_u32(output, function.local_count)?;
-    for (ty, mutable) in function.local_types.iter().zip(&function.local_mutability) {
-        write_u8(output, type_tag(*ty));
-        write_u8(output, u8::from(*mutable));
+    for slot in 0..function.local_count {
+        write_u8(output, type_tag(function.local_types[slot]));
+        write_u8(output, u8::from(function.local_mutability[slot]));
+        write_u32(output, function.local_declarations[slot].unwrap_or(u32::MAX as usize))?;
     }
     write_u8(output, function.return_type.map(type_tag).unwrap_or(0));
     write_u32(output, function.code.len())?;
@@ -297,7 +298,6 @@ impl<'a> Reader<'a> {
             26 => Opcode::Return,
             27 => Opcode::Halt,
             28 => Opcode::Unreachable,
-            29 => Opcode::ResetLocals { start: self.read_u32()?, count: self.read_u32()? },
             _ => return Err(format_error("Unknown opcode tag in bytecode file")),
         })
     }
@@ -318,9 +318,12 @@ impl<'a> Reader<'a> {
         }
         let mut local_types = Vec::with_capacity(local_count);
         let mut local_mutability = Vec::with_capacity(local_count);
+        let mut local_declarations = Vec::with_capacity(local_count);
         for _ in 0..local_count {
             local_types.push(self.read_type()?);
             local_mutability.push(self.read_bool()?);
+            let declaration = self.read_u32()?;
+            local_declarations.push((declaration != u32::MAX as usize).then_some(declaration));
         }
         let return_type = self.read_optional_type()?;
         let instruction_count = self.read_u32()?;
@@ -347,6 +350,7 @@ impl<'a> Reader<'a> {
             local_count,
             local_types,
             local_mutability,
+            local_declarations,
             return_type,
             code,
         })
