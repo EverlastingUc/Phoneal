@@ -77,9 +77,9 @@ The VM is an execution engine, not a sandbox. It has no aggregate heap quota, wa
 
 ## Latest verified implementation
 
-- Commit: `0bc6412746d63dda15ab814713ec66444b560e4e`
-- CI: [Phoneal CI #45057968842](https://github.com/EverlastingUc/Phoneal/actions/runs/45057968842)
-- Tests: **126 passed, 0 failed** (77 unit, 42 compiler-pipeline, 4 bytecode compiler, 3 typed IR)
+- Code commit: `0c988c438816f1267f281533a94f4de33749e705`
+- CI: [Phoneal CI #45058139894](https://github.com/EverlastingUc/Phoneal/actions/runs/45058139894)
+- Tests: **127 passed, 0 failed** (78 unit, 42 compiler-pipeline, 4 bytecode compiler, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
