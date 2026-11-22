@@ -182,7 +182,7 @@ This is a policy model only. No VM operation, host API, IPC broker, or OS permis
 
 ### Phase 24 — Bounded IPC Frame Protocol
 
-**Implemented; CI verification pending.**
+**Implemented and CI-verified.**
 
 - Added PHIP protocol version 1 with fixed magic, version, message kind, reserved flags, request ID, payload length, and CRC-32.
 - Added a 1 MiB maximum payload and strict length, magic, version, flags, kind, and checksum validation.
