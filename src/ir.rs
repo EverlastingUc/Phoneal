@@ -352,20 +352,20 @@ impl Lowerer {
 
     fn lower_expression(&self, expression: &Expression) -> Result<TypedExpression, Diagnostic> {
         let (kind, ty, location) = match expression {
-            Expression::Integer(value) => (
+            Expression::Integer(value, location) => (
                 TypedExpressionKind::Integer(*value),
                 PhonealType::Integer,
-                None,
+                Some(location.clone()),
             ),
-            Expression::String(value) => (
+            Expression::String(value, location) => (
                 TypedExpressionKind::Text(value.clone()),
                 PhonealType::Text,
-                None,
+                Some(location.clone()),
             ),
-            Expression::Boolean(value) => (
+            Expression::Boolean(value, location) => (
                 TypedExpressionKind::Boolean(*value),
                 PhonealType::Boolean,
-                None,
+                Some(location.clone()),
             ),
             Expression::Variable { name, location } => {
                 let ty = self
