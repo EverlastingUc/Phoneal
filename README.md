@@ -42,7 +42,7 @@ print(factorial(5));
 
 ## Pipeline
 
-    Source -> Lexer -> Parser -> Semantic Analysis -> Rust Interpreter
+    Source -> Lexer -> Parser -> Semantic Analysis -> Typed IR -> Rust Interpreter
 
 This is still an interpreter prototype. It is not a bytecode compiler, virtual machine, or sandbox. Do not execute untrusted Phoneal programs with it.
 
