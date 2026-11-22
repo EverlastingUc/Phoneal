@@ -420,6 +420,22 @@ mod tests {
     }
 
     #[test]
+    fn reinitializes_immutable_locals_for_each_loop_iteration() {
+        assert_eq!(
+            run("create mutable count = 0; while (count < 3) { create snapshot = count; set count = count + 1; if (count == 2) { continue; } print(snapshot); }"),
+            Ok(vec!["0".to_owned(), "2".to_owned()])
+        );
+    }
+
+    #[test]
+    fn resets_nested_loop_local_frames_without_clearing_outer_bindings() {
+        assert_eq!(
+            run("create mutable outer = 0; while (outer < 2) { create snapshot = outer; create mutable inner = 0; while (inner < 2) { create local = inner; print(snapshot * 10 + local); set inner = inner + 1; } set outer = outer + 1; }"),
+            Ok(vec!["0".to_owned(), "1".to_owned(), "10".to_owned(), "11".to_owned()])
+        );
+    }
+
+    #[test]
     fn executes_mutable_function_locals() {
         assert_eq!(
             run("function count_from(start: integer) returns integer { create mutable current = start; while (current < 3) { set current = current + 1; } return current; } print(count_from(0));"),
