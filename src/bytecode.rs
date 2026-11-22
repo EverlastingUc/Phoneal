@@ -378,8 +378,8 @@ mod tests {
         let bytecode = compile_source("function add(a: integer, b: integer) returns integer { return a + b; } print(add(20, 22));");
         assert_eq!(bytecode.functions.len(), 1);
         assert_eq!(bytecode.functions[0].parameter_count, 2);
-        assert!(bytecode.functions[0].code.iter().any(|instruction| matches!(instruction.opcode, Opcode::Return)));
-        assert!(bytecode.entry.code.iter().any(|instruction| matches!(instruction.opcode, Opcode::Call { function: 0, argument_count: 2 })));
+        assert!(bytecode.functions[0].code.iter().any(|instruction| matches!(&instruction.opcode, Opcode::Return)));
+        assert!(bytecode.entry.code.iter().any(|instruction| matches!(&instruction.opcode, Opcode::Call { function: 0, argument_count: 2 })));
     }
 
     #[test]
@@ -387,8 +387,8 @@ mod tests {
         let bytecode = compile_source("create mutable n = 0; if (true) { print(1); } else { print(2); } while (n < 2) { set n = n + 1; if (n == 1) { continue; } break; }");
         for function in bytecode.functions.iter().chain(std::iter::once(&bytecode.entry)) {
             for instruction in &function.code {
-                match instruction.opcode {
-                    Opcode::Jump(target) | Opcode::JumpIfFalse(target) => assert!(target <= function.code.len()),
+                match &instruction.opcode {
+                    Opcode::Jump(target) | Opcode::JumpIfFalse(target) => assert!(*target <= function.code.len()),
                     _ => {}
                 }
             }
@@ -398,9 +398,9 @@ mod tests {
     #[test]
     fn preserves_short_circuit_control_flow() {
         let bytecode = compile_source("print(false and (1 / 0 == 0)); print(true or (1 / 0 == 0));");
-        assert!(bytecode.entry.code.iter().any(|instruction| matches!(instruction.opcode, Opcode::JumpIfFalse(_))));
-        assert!(bytecode.entry.code.iter().any(|instruction| matches!(instruction.opcode, Opcode::PushBoolean(false))));
-        assert!(bytecode.entry.code.iter().any(|instruction| matches!(instruction.opcode, Opcode::PushBoolean(true))));
+        assert!(bytecode.entry.code.iter().any(|instruction| matches!(&instruction.opcode, Opcode::JumpIfFalse(_))));
+        assert!(bytecode.entry.code.iter().any(|instruction| matches!(&instruction.opcode, Opcode::PushBoolean(false))));
+        assert!(bytecode.entry.code.iter().any(|instruction| matches!(&instruction.opcode, Opcode::PushBoolean(true))));
     }
 
     #[test]
