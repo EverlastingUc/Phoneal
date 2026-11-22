@@ -103,6 +103,17 @@ This is a typed correctness verifier, not a complete security boundary. It does 
 
 CRC-32 detects accidental corruption; it is not cryptographic authentication. PHNB files are not trusted merely because they deserialize successfully.
 
+### Phase 17 — Bytecode Disassembler
+
+**Implementation in progress; CI verification pending.**
+
+- Public API: `bytecode::disassemble(&BytecodeProgram)`.
+- Verifies the program before producing output.
+- Prints function signatures, local counts, instruction offsets, opcodes, call targets, jump targets, and source locations.
+- Tests cover functions, calls, branches, locations, and invalid bytecode rejection.
+
+The listing is a debugging representation, not a source-level decompiler.
+
 ## Latest verified implementation
 
 - Code commit: `0a3f015e661ff86ffacc8e13e04df86ad70ea87e`
