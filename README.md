@@ -19,7 +19,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Functions can read global bindings but cannot mutate outer-scope bindings
 - Typed intermediate representation via `compile_to_ir(source)`, with source locations and independent IR validation
 - Stack-bytecode compiler via `compile_to_bytecode(source)`, with typed opcodes, local/global slots, function-call targets, patched branches/loops, and short-circuit control flow
-- Typed bytecode verifier for stack types, control-flow merges, function signatures, and global-write restrictions
+- Typed bytecode verifier for stack types, control-flow merges, function signatures, definite local initialization, and global-write restrictions
 - Versioned PHNB bytecode serialization/deserialization with bounded parsing, CRC-32 integrity checks, and verification on load
 - Human-readable bytecode disassembler via `bytecode::disassemble`
 - Bytecode VM via `run_bytecode(source)` / `bytecode::execute_bytecode`, with checked arithmetic, typed frames, mutability enforcement, recursion and execution limits
