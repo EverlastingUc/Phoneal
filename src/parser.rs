@@ -439,10 +439,10 @@ impl Parser {
         let t = self.advance();
         let token_location = Self::loc(&t);
         match t.kind {
-            TokenKind::Integer(v) => Ok(Expression::Integer(v)),
-            TokenKind::String(v) => Ok(Expression::String(v)),
-            TokenKind::True => Ok(Expression::Boolean(true)),
-            TokenKind::False => Ok(Expression::Boolean(false)),
+            TokenKind::Integer(v) => Ok(Expression::Integer(v, token_location)),
+            TokenKind::String(v) => Ok(Expression::String(v, token_location)),
+            TokenKind::True => Ok(Expression::Boolean(true, token_location)),
+            TokenKind::False => Ok(Expression::Boolean(false, token_location)),
             TokenKind::Identifier(name) => {
                 let loc = token_location;
                 if self.take(&TokenKind::LeftParen) {
