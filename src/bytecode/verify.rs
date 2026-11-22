@@ -102,6 +102,11 @@ fn verify_function(
                 pop_type(&mut state.stack, Some(function.local_types[*slot]))?;
                 state.initialized_locals[*slot] = true;
             }
+            Opcode::ResetLocals { start, count } => {
+                let end = start + count;
+                state.initialized_locals[*start..end].fill(false);
+            }
+
             Opcode::LoadGlobal(slot) => push_type(&mut state.stack, program.global_types[*slot])?,
             Opcode::StoreGlobal(slot) => {
                 if !is_entry {
