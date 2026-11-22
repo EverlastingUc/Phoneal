@@ -88,3 +88,15 @@ fn cli_rejects_source_larger_than_frontend_admission_limit() {
     assert!(String::from_utf8_lossy(&output.stderr).contains("input limit"));
     fs::remove_file(source_path).unwrap();
 }
+
+#[test]
+fn cli_supports_help_and_version_flags() {
+    let binary = env!("CARGO_BIN_EXE_phnl");
+    let help = Command::new(binary).arg("--help").output().unwrap();
+    assert!(help.status.success());
+    assert!(String::from_utf8_lossy(&help.stderr).contains("phnl build"));
+
+    let version = Command::new(binary).arg("--version").output().unwrap();
+    assert!(version.status.success());
+    assert!(String::from_utf8_lossy(&version.stdout).starts_with("phnl "));
+}
