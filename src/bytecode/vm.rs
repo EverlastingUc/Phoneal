@@ -261,6 +261,14 @@ impl<'a> Vm<'a> {
                 Opcode::PushBoolean(value) => self.push(Value::Boolean(value), location.as_ref())?,
                 Opcode::LoadLocal(slot) => self.load_local(frame_index, slot, location.as_ref())?,
                 Opcode::StoreLocal(slot) => self.store_local(frame_index, slot, location.as_ref())?,
+                Opcode::ResetLocals { start, count } => {
+                    let end = start.checked_add(count)
+                        .ok_or_else(|| Self::fail("Local reset range overflows", location.as_ref()))?;
+                    let locals = &mut self.frames[frame_index].locals;
+                    let range = locals.get_mut(start..end)
+                        .ok_or_else(|| Self::fail("Local reset range is outside the current frame", location.as_ref()))?;
+                    range.fill(None);
+                }
                 Opcode::LoadGlobal(slot) => self.load_global(slot, location.as_ref())?,
                 Opcode::StoreGlobal(slot) => self.store_global(frame_index, slot, location.as_ref())?,
                 Opcode::Pop => { self.pop(location.as_ref())?; }
