@@ -116,8 +116,8 @@ fn verify_function(
             Opcode::Jump(target) => successors.push(*target),
             Opcode::JumpIfFalse(target) => {
                 pop_type(&mut stack, Some(PhonealType::Boolean))?;
-                successors.push(*target);
                 successors.push(ip + 1);
+                successors.push(*target);
             }
             Opcode::Call { function: target, argument_count } => {
                 let callee = program.functions.get(*target).ok_or_else(|| invalid("Call references an unknown function"))?;
