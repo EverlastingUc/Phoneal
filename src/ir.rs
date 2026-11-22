@@ -530,7 +530,10 @@ impl Lowerer {
                 let left = self.lower_expression(left)?;
                 let right = self.lower_expression(right)?;
                 let operator = lower_binary_operator(operator).ok_or_else(|| {
-                    Self::error("Unsupported binary operator in AST", Some(operator_location))
+                    Self::error(
+                        "Unsupported binary operator in AST",
+                        Some(operator_location),
+                    )
                 })?;
                 let ty = binary_type(operator, left.ty, right.ty).ok_or_else(|| {
                     Self::error(
