@@ -67,7 +67,7 @@ fn write_opcode(
         Opcode::StoreLocal(slot) => write!(output, "StoreLocal {slot}"),
         Opcode::LoadGlobal(slot) => write!(output, "LoadGlobal {slot}"),
         Opcode::StoreGlobal(slot) => write!(output, "StoreGlobal {slot}"),
-        Opcode::ResetLocals { start, count } => write!(output, "ResetLocals {start}..{}", start + count),
+        Opcode::ResetLocals { start, count } => write!(output, "ResetLocals {start}..{}", *start + *count),
         Opcode::Pop => write!(output, "Pop"),
         Opcode::Print => write!(output, "Print"),
         Opcode::Negate => write!(output, "Negate"),
