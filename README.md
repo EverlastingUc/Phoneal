@@ -23,7 +23,8 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Source-located lexer, parser, semantic, and runtime diagnostics
 - Comments and escaped string literals
 - CI-verified executable language examples (see `examples/README.md`)
-- Resource limits: 1 MiB source, 100,000 tokens, 256 nested grammar levels, 128 active calls, and 50,000 execution steps per run (including loop condition checks)
+- Front-end/interpreter limits: 1 MiB source, 100,000 tokens, 256 nested grammar levels, 128 active calls, and 50,000 interpreter steps
+- Bytecode VM limits: 50,000 instructions, 128 active calls, 100,000 operand-stack values, 1 MiB per text value, and 1 MiB captured output
 
 ```phoneal
 function factorial(number: integer) returns integer {
@@ -48,11 +49,12 @@ print(factorial(5));
     Source -> Lexer -> Parser -> Semantic Analysis -> AST Interpreter
                                       \-> Typed IR -> future Bytecode Compiler -> VM
 
-The bytecode compiler and initial VM are implemented, but `run(source)` still uses the AST interpreter. The VM has runtime checks and bounded execution, but no security-grade bytecode verifier, heap quota, wall-clock limit, capability isolation, or process sandbox. Do not execute untrusted Phoneal programs with it.
+The bytecode compiler and initial VM are implemented. `run(source)` still uses the AST interpreter; `run_bytecode(source)` uses the bytecode VM. The VM has runtime checks and bounded execution, but no security-grade bytecode verifier, heap quota, wall-clock limit, capability isolation, or process sandbox. Do not execute untrusted Phoneal programs with it.
 
 ## Documentation
 
 - [Bytecode instruction format and compiler contract](docs/bytecode.md)
+- [Bytecode VM runtime contract](docs/vm.md)
 
 - [Complete syntax design and implementation status](Syntax.md)
 - [Implemented language subset](LANGUAGE_SPEC.md)
