@@ -163,7 +163,7 @@ fn verify_function(
                 }
                 let expected = function.return_type.ok_or_else(|| invalid("Function has no return type"))?;
                 pop_type(&mut state.stack, Some(expected))?;
-                if !stack.is_empty() {
+                if !state.stack.is_empty() {
                     return Err(invalid("Function return leaves extra values on the operand stack"));
                 }
                 terminal = true;
@@ -172,7 +172,7 @@ fn verify_function(
                 if !is_entry {
                     return Err(invalid("Function bytecode cannot halt"));
                 }
-                if !stack.is_empty() {
+                if !state.stack.is_empty() {
                     return Err(invalid("Entry halt leaves values on the operand stack"));
                 }
                 terminal = true;
@@ -245,6 +245,16 @@ mod tests {
         let else_print = program.entry.code.iter().rposition(|instruction| matches!(&instruction.opcode, Opcode::Print)).unwrap();
         program.entry.code[else_print].opcode = Opcode::PushInteger(2);
         assert!(verify(&program).unwrap_err().message.contains("incompatible operand stacks"));
+    }
+
+    #[test]
+    fn rejects_reads_from_uninitialized_local_slots() {
+        let mut program = compile_to_bytecode(
+            "function read() returns integer { create local = 1; return local; } print(read());",
+        ).unwrap();
+        let function = &mut program.functions[0];
+        function.code[1].opcode = Opcode::Pop;
+        assert!(verify(&program).unwrap_err().message.contains("uninitialized local"));
     }
 
     #[test]
