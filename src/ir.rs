@@ -13,9 +13,16 @@ pub struct TypedProgram {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct TypedParameter {
+    pub name: String,
+    pub ty: PhonealType,
+    pub location: SourceLocation,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypedFunction {
     pub name: String,
-    pub parameters: Vec<(String, PhonealType)>,
+    pub parameters: Vec<TypedParameter>,
     pub return_type: PhonealType,
     pub body: Vec<TypedStatement>,
     pub location: SourceLocation,
@@ -85,7 +92,7 @@ pub enum TypedStatementKind {
 
 #[derive(Default)]
 struct Lowerer {
-    scopes: Vec<HashMap<String, PhonealType>>,
+    scopes: Vec<HashMap<String, (PhonealType, bool)>>,
     functions: HashMap<String, (Vec<PhonealType>, PhonealType)>,
     loop_depth: usize,
     return_types: Vec<PhonealType>,
@@ -148,7 +155,7 @@ impl Lowerer {
                     self.scopes.push(
                         parameters
                             .iter()
-                            .map(|(name, ty, _)| (name.clone(), *ty))
+                            .map(|(name, ty, _)| (name.clone(), (*ty, false)))
                             .collect(),
                     );
                     let lowered_body = self.lower_statements(function_body)?;
@@ -159,7 +166,11 @@ impl Lowerer {
                         name: name.clone(),
                         parameters: parameters
                             .iter()
-                            .map(|(name, ty, _)| (name.clone(), *ty))
+                            .map(|(name, ty, location)| TypedParameter {
+                                name: name.clone(),
+                                ty: *ty,
+                                location: location.clone(),
+                            })
                             .collect(),
                         return_type: *return_type,
                         body: lowered_body,
@@ -204,7 +215,7 @@ impl Lowerer {
                     ));
                 }
                 let scope = self.scopes.last_mut().expect("lowerer always has a scope");
-                if scope.insert(name.clone(), ty).is_some() {
+                if scope.insert(name.clone(), (ty, *mutable)).is_some() {
                     return Err(Self::error(
                         format!("Variable '{name}' is already declared in this scope"),
                         Some(name_location),
@@ -225,7 +236,7 @@ impl Lowerer {
                 location,
                 value,
             } => {
-                let expected = self
+                let (expected, mutable) = self
                     .scopes
                     .iter()
                     .rev()
@@ -236,6 +247,12 @@ impl Lowerer {
                             Some(location),
                         )
                     })?;
+                if !mutable {
+                    return Err(Self::error(
+                        format!("Cannot assign to immutable variable '{name}'"),
+                        Some(location),
+                    ));
+                }
                 let value = self.lower_expression(value)?;
                 if expected != value.ty {
                     return Err(Self::error(
@@ -372,7 +389,7 @@ impl Lowerer {
                     .scopes
                     .iter()
                     .rev()
-                    .find_map(|scope| scope.get(name).copied())
+                    .find_map(|scope| scope.get(name).map(|(ty, _)| *ty))
                     .ok_or_else(|| {
                         Self::error(format!("Undefined variable '{name}'"), Some(location))
                     })?;
@@ -531,7 +548,7 @@ pub fn validate(program: &TypedProgram) -> Result<(), Diagnostic> {
                     function
                         .parameters
                         .iter()
-                        .map(|(_, ty)| *ty)
+                        .map(|parameter| parameter.ty)
                         .collect::<Vec<_>>(),
                     function.return_type,
                 ),
