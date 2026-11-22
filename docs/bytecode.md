@@ -18,7 +18,7 @@ The compiler validates the typed IR before lowering it. It then performs structu
 - Top-level bindings occupy global slots.
 - Functions may load global bindings, but the current language semantics prohibit functions from mutating outer/global bindings.
 - Function references use indices into `BytecodeProgram.functions`.
-- The entry code is stored separately as `BytecodeProgram.entry`. Frame metadata records local/parameter/global types and mutability for runtime checks.
+- The entry code is stored separately as `BytecodeProgram.entry`. Frame metadata records local/parameter/global types, mutability, and each local's declaration instruction offset for runtime checks.
 
 ## Instruction contract
 
@@ -65,9 +65,11 @@ This is deliberately **not** a security verifier. It does not prove stack-depth 
 
 ## VM execution
 
-The initial VM executes these instructions with typed local/global slots, mutability enforcement, function frames, checked arithmetic, and bounded instruction/call/stack/text/output usage. See [vm.md](vm.md) for its runtime contract. The original `run(source)` API still uses the AST interpreter; `run_bytecode(source)` selects the bytecode path.
+The initial VM executes these instructions with typed local/global slots, declaration-site-aware local mutability, function frames, checked arithmetic, and bounded instruction/call/stack/text/output usage. See [vm.md](vm.md) for its runtime contract. The original `run(source)` API still uses the AST interpreter; `run_bytecode(source)` selects the bytecode path.
 
 ## Typed bytecode verification
+
+The verifier uses each local slot's declaration-instruction offset to distinguish initialization from later assignment. It permits the declaration instruction to execute repeatedly when a lexical block is re-entered by a loop, while other stores require an initialized mutable slot.
 
 `bytecode::verify` performs control-flow data-flow analysis with a typed operand stack. It checks stack underflow, operand types, branch merge consistency, definite local initialization, call argument and result types, return-stack balance, entry halt balance, and forbids function bytecode from writing globals. The verifier starts each function with an empty relative operand stack; call instructions are checked using the callee signature.
 
