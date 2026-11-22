@@ -116,7 +116,7 @@ The listing is a debugging representation, not a source-level decompiler.
 
 ### Phase 18 — CLI Bytecode Workflow
 
-**Implementation in progress; CI verification pending.**
+**Complete and CI-verified.**
 
 - `phnl build <file.phnl> --output <file.phnb>` compiles, verifies, and serializes a source program.
 - `phnl inspect <file.phnb>` deserializes, verifies, and disassembles a bytecode file.
@@ -126,9 +126,9 @@ The listing is a debugging representation, not a source-level decompiler.
 
 ## Latest verified implementation
 
-- Code commit: `178d358828aeb5ba72a5e24222e19742824e07a6`
-- CI: [Phoneal CI #45059133490](https://github.com/EverlastingUc/Phoneal/actions/runs/45059133490)
-- Tests: **143 passed, 0 failed** (91 unit, 42 compiler-pipeline, 7 bytecode integration, 3 typed IR)
+- Code commit: `6c680367b015956ea852bba6751302aa4f50a2b4`
+- CI: [Phoneal CI #45059293566](https://github.com/EverlastingUc/Phoneal/actions/runs/45059293566)
+- Tests: **145 passed, 0 failed** (91 unit, 42 compiler-pipeline, 7 bytecode integration, 2 CLI, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
