@@ -51,6 +51,8 @@ The bytecode compiler is an intermediate compiler stage only. There is no byteco
 
 ## Documentation
 
+- [Bytecode instruction format and compiler contract](docs/bytecode.md)
+
 - [Complete syntax design and implementation status](Syntax.md)
 - [Implemented language subset](LANGUAGE_SPEC.md)
 - [Compiler architecture](docs/architecture.md)
