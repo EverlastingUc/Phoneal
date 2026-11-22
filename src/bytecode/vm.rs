@@ -19,6 +19,15 @@ pub enum Value {
 }
 
 impl Value {
+    fn same_type(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::Integer(_), Self::Integer(_))
+                | (Self::Text(_), Self::Text(_))
+                | (Self::Boolean(_), Self::Boolean(_))
+        )
+    }
+
     fn has_type(&self, ty: PhonealType) -> bool {
         matches!(
             (self, ty),
@@ -326,6 +335,9 @@ impl<'a> Vm<'a> {
                 Opcode::Equal | Opcode::NotEqual => {
                     let right = self.pop(location.as_ref())?;
                     let left = self.pop(location.as_ref())?;
+                    if !left.same_type(&right) {
+                        return Err(Self::fail("Equality comparison received values of different types", location.as_ref()));
+                    }
                     let equal = left == right;
                     self.push(Value::Boolean(if matches!(opcode, Opcode::Equal) { equal } else { !equal }), location.as_ref())?;
                 }
