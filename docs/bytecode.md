@@ -72,6 +72,10 @@ The initial VM executes these instructions with typed local/global slots, mutabi
 
 This verifier is a compiler/runtime correctness layer. It does not prove definite initialization, memory safety for arbitrary host extensions, aggregate heap usage, wall-clock bounds, or sandbox isolation.
 
+## Disassembly
+
+`bytecode::disassemble(&program)` verifies a bytecode program and emits a stable textual listing with function indices, signatures, instruction offsets, jump targets, call targets, and source locations. It is a diagnostic/debugging view, not a source-level decompiler.
+
 ## PHNB file serialization
 
 The version-1 PHNB container is documented in [bytecode-format.md](bytecode-format.md). `bytecode::serialize` verifies and serializes a program; `bytecode::deserialize` checks the header, bounds, CRC-32, payload structure, and typed bytecode flow before returning it. CRC-32 is not cryptographic authentication.
