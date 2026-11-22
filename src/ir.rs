@@ -213,7 +213,10 @@ impl Lowerer {
                 let ty = declared_type.unwrap_or(value.ty);
                 if ty != value.ty {
                     return Err(Self::error(
-                        format!("Declaration of '{name}' expects {ty}, received {}", value.ty),
+                        format!(
+                            "Declaration of '{name}' expects {ty}, received {}",
+                            value.ty
+                        ),
                         Some(name_location),
                     ));
                 }
@@ -259,7 +262,10 @@ impl Lowerer {
                 let value = self.lower_expression(value)?;
                 if expected != value.ty {
                     return Err(Self::error(
-                        format!("Assignment to '{name}' expects {expected}, received {}", value.ty),
+                        format!(
+                            "Assignment to '{name}' expects {expected}, received {}",
+                            value.ty
+                        ),
                         Some(location),
                     ));
                 }
@@ -271,9 +277,10 @@ impl Lowerer {
                     Some(location.clone()),
                 )
             }
-            Statement::Print(expression) => {
-                (TypedStatementKind::Print(self.lower_expression(expression)?), None)
-            }
+            Statement::Print(expression) => (
+                TypedStatementKind::Print(self.lower_expression(expression)?),
+                None,
+            )
             Statement::Return { value, location } => {
                 let value = self.lower_expression(value)?;
                 let expected = self.return_types.last().copied().ok_or_else(|| {
@@ -294,7 +301,10 @@ impl Lowerer {
                 self.scopes.push(HashMap::new());
                 let statements = self.lower_statements(statements)?;
                 self.scopes.pop();
-                (TypedStatementKind::Block(statements), Some(location.clone()))
+                (
+                    TypedStatementKind::Block(statements),
+                    Some(location.clone()),
+                )
             }
             Statement::If {
                 condition,
@@ -333,7 +343,10 @@ impl Lowerer {
             } => {
                 let condition = self.lower_expression(condition)?;
                 if condition.ty != PhonealType::Boolean {
-                    return Err(Self::error("While condition must be boolean", Some(location)));
+                    return Err(Self::error(
+                        "While condition must be boolean",
+                        Some(location),
+                    ));
                 }
                 self.loop_depth += 1;
                 self.scopes.push(HashMap::new());
@@ -347,7 +360,10 @@ impl Lowerer {
             }
             Statement::Break { location } => {
                 if self.loop_depth == 0 {
-                    return Err(Self::error("'break' is only valid inside a loop", Some(location)));
+                    return Err(Self::error(
+                        "'break' is only valid inside a loop",
+                        Some(location),
+                    ));
                 }
                 (TypedStatementKind::Break, Some(location.clone()))
             }
@@ -407,9 +423,10 @@ impl Lowerer {
                 location,
                 arguments,
             } => {
-                let (parameters, return_type) = self.functions.get(name).cloned().ok_or_else(|| {
-                    Self::error(format!("Undefined function '{name}'"), Some(location))
-                })?;
+                let (parameters, return_type) =
+                    self.functions.get(name).cloned().ok_or_else(|| {
+                        Self::error(format!("Undefined function '{name}'"), Some(location))
+                    })?;
                 let arguments = arguments
                     .iter()
                     .map(|argument| self.lower_expression(argument))
@@ -481,10 +498,7 @@ impl Lowerer {
                 let right = self.lower_expression(right)?;
                 let ty = binary_type(operator.clone(), left.ty, right.ty).ok_or_else(|| {
                     Self::error(
-                        format!(
-                            "Operator cannot be applied to {} and {}",
-                            left.ty, right.ty
-                        ),
+                        format!("Operator cannot be applied to {} and {}", left.ty, right.ty),
                         Some(operator_location),
                     )
                 })?;
@@ -503,11 +517,7 @@ impl Lowerer {
     }
 }
 
-fn binary_type(
-    operator: TokenKind,
-    left: PhonealType,
-    right: PhonealType,
-) -> Option<PhonealType> {
+fn binary_type(operator: TokenKind, left: PhonealType, right: PhonealType) -> Option<PhonealType> {
     use PhonealType::{Boolean, Integer, Text};
     match (operator, left, right) {
         (TokenKind::Plus, Integer, Integer) => Some(Integer),
@@ -560,12 +570,7 @@ pub fn validate(program: &TypedProgram) -> Result<(), Diagnostic> {
         .collect();
     let mut globals = HashMap::new();
     for statement in &program.statements {
-        if let TypedStatementKind::Let {
-            name,
-            mutable,
-            ty,
-            ..
-        } = &statement.kind
+        if let TypedStatementKind::Let { name, mutable, ty, .. } = &statement.kind
         {
             if globals.insert(name.clone(), (*ty, *mutable)).is_some() {
                 return Err(Lowerer::error(
@@ -600,14 +605,7 @@ pub fn validate(program: &TypedProgram) -> Result<(), Diagnostic> {
     }
 
     let mut scopes = vec![HashMap::new()];
-    validate_statements(
-        &program.statements,
-        &signatures,
-        &mut scopes,
-        None,
-        0,
-        None,
-    )
+    validate_statements(&program.statements, &signatures, &mut scopes, None, 0, None)
 }
 
 fn validate_statements(
@@ -649,7 +647,9 @@ fn validate_statements(
                     return Err(fail("IR assignment targets an immutable binding"));
                 }
                 if function_scope_depth.is_some_and(|depth| scope_index < depth) {
-                    return Err(fail("IR function assignment targets an outer-scope binding"));
+                    return Err(fail(
+                        "IR function assignment targets an outer-scope binding",
+                    ));
                 }
                 validate_expression(value, signatures, scopes)?;
                 if value.ty != expected {
@@ -795,7 +795,9 @@ fn validate_expression(
             validate_expression(left, signatures, scopes)?;
             validate_expression(right, signatures, scopes)?;
             if binary_type(operator.clone(), left.ty, right.ty) != Some(expression.ty) {
-                return Err(fail("IR binary expression has incompatible operand or result types"));
+                return Err(fail(
+                    "IR binary expression has incompatible operand or result types",
+                ));
             }
             Ok(())
         }
@@ -824,12 +826,18 @@ mod tests {
         assert_eq!(program.functions.len(), 1);
         assert_eq!(
             program.functions[0].parameters[0].location,
-            SourceLocation { line: 1, column: 14 }
+            SourceLocation {
+                line: 1,
+                column: 14
+            }
         );
         assert_eq!(program.statements.len(), 2);
         assert!(matches!(
             &program.statements[0].kind,
-            TypedStatementKind::Let { ty: PhonealType::Integer, .. }
+            TypedStatementKind::Let {
+                ty: PhonealType::Integer,
+                ..
+            }
         ));
     }
 
@@ -843,7 +851,10 @@ mod tests {
         match &program.statements[0].kind {
             TypedStatementKind::Let { value, .. } => assert_eq!(
                 value.location,
-                Some(SourceLocation { line: 1, column: 16 })
+                Some(SourceLocation {
+                    line: 1,
+                    column: 16
+                })
             ),
             _ => panic!("expected declaration"),
         }
@@ -851,7 +862,10 @@ mod tests {
             TypedStatementKind::Print(expression) => {
                 assert_eq!(
                     expression.location,
-                    Some(SourceLocation { line: 1, column: 26 })
+                    Some(SourceLocation {
+                        line: 1,
+                        column: 26
+                    })
                 );
             }
             _ => panic!("expected print statement"),
