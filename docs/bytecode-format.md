@@ -1,6 +1,6 @@
 # Phoneal Bytecode File Format
 
-**Format:** PHNB version 1  
+**Format:** PHNB version 2  
 **Extension:** `.phnb`  
 **Status:** Serializer/deserializer implemented and CI-verified.
 
@@ -31,7 +31,7 @@ Function layout:
 1. UTF-8 function name (length-prefixed).
 2. Parameter count and parameter type tags.
 3. Local slot count.
-4. For each local slot: primitive type tag and mutability flag.
+4. For each local slot: primitive type tag, mutability flag, and declaration-instruction offset (`u32::MAX` for parameter slots).
 5. Return type tag (`0` means no return type; otherwise a primitive type tag).
 6. Instruction count.
 7. Instructions, each followed by a source-location flag and optional line/column pair.
@@ -52,7 +52,6 @@ Primitive type tags: `1 = integer`, `2 = text`, `3 = boolean`.
 | 23–24 | Jump, JumpIfFalse | absolute instruction index `u32` |
 | 25 | Call | function index and argument count |
 | 26–28 | Return, Halt, Unreachable | none |
-| 29 | ResetLocals | start slot and count (`u32`) |
 
 Source-location flag `0` means absent; flag `1` is followed by line and column as `u32`. Other flags are invalid.
 
