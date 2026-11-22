@@ -570,7 +570,9 @@ pub fn validate(program: &TypedProgram) -> Result<(), Diagnostic> {
     }
     let mut globals = HashMap::new();
     for statement in &program.statements {
-        if let TypedStatementKind::Let { name, mutable, ty, .. } = &statement.kind
+        if let TypedStatementKind::Let {
+            name, mutable, ty, ..
+        } = &statement.kind
         {
             if globals.insert(name.clone(), (*ty, *mutable)).is_some() {
                 return Err(Lowerer::error(
