@@ -42,9 +42,4 @@ jobs:
             state=failure
             description="One or more Phoneal checks failed"
           fi
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \\
-            --method POST \\
-            --field state="$state" \\
-            --field context="Phoneal CI" \\
-            --field description="$description" \\
-            --field target="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" --method POST --field state="$state" --field context="Phoneal CI" --field description="$description" --field target="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
