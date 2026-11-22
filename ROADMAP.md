@@ -28,7 +28,7 @@ This document records the roadmap state established by the current project speci
 - Public Rust API: `compile_to_ir(source)`.
 - Executable example: `examples/typed_ir.phnl`.
 
-The interpreter still executes the AST. The typed IR is the compiler-facing representation; it is not yet consumed by bytecode generation or a VM.
+The AST interpreter remains available. Typed IR is consumed by the bytecode compiler, and the resulting stack instructions can be executed by the initial Phoneal VM through `run_bytecode(source)`.
 
 ### Phase 13 — Bytecode Compiler
 
@@ -44,7 +44,7 @@ The interpreter still executes the AST. The typed IR is the compiler-facing repr
 - Structural validation checks jump targets, local/global slots, function-call indices and arity, and function/entry terminators.
 - Tests cover arithmetic, function calls, control-flow targets, short-circuit structure, global reads in functions, source-location retention, and malformed bytecode structures.
 
-This phase intentionally stops at bytecode generation. It does not claim bytecode verification, serialization, VM execution, or sandboxing.
+This phase intentionally stops at bytecode generation. VM execution is tracked separately in Phase 14.
 
 Expected pipeline direction:
 
@@ -58,6 +58,29 @@ Phoneal Source
     -> Phoneal VM
     -> Security Architecture
 ```
+
+### Phase 14 — Initial Bytecode Virtual Machine
+
+**Complete and CI-verified.**
+
+- Public source API: `run_bytecode(source)`.
+- Public VM API: `bytecode::execute_bytecode(&BytecodeProgram)`.
+- Typed runtime values for integers, text, and booleans.
+- Call frames with parameter/local slots and return-value propagation, including recursion.
+- Runtime type and mutability checks for local/global stores; functions cannot mutate global bindings.
+- Checked integer arithmetic, text concatenation, comparisons, and short-circuit execution.
+- Runtime diagnostics retain instruction source locations where available.
+- Limits: 50,000 instructions, 128 active calls, 100,000 operand-stack values, 1 MiB per text value, and 1 MiB captured output.
+- Tests cover arithmetic, recursion, mutable locals/globals, read-only globals in functions, overflow, division by zero, short-circuiting, step limits, and malformed bytecode.
+
+The VM is an execution engine, not a sandbox. It has no aggregate heap quota, wall-clock deadline, capability system, host-resource isolation, or security-grade bytecode verifier.
+
+## Latest verified implementation
+
+- Commit: `8495f5c7b2538beb2962671ab40d58491f8c1679`
+- CI: [Phoneal CI #45057837395](https://github.com/EverlastingUc/Phoneal/actions/runs/45057837395)
+- Tests: **125 passed, 0 failed** (76 unit, 42 compiler-pipeline, 4 bytecode compiler, 3 typed IR)
+- Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
 
