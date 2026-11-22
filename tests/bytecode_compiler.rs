@@ -1,6 +1,6 @@
 use phoneal::{
     bytecode::Opcode,
-    compile_to_bytecode,
+    compile_to_bytecode, run_bytecode,
 };
 
 #[test]
@@ -21,4 +21,12 @@ fn bytecode_retains_source_locations() {
 fn compiler_rejects_semantically_invalid_source() {
     let error = compile_to_bytecode("create value = missing;").unwrap_err();
     assert!(error.message.contains("Undefined variable"));
+}
+
+#[test]
+fn public_api_compiles_and_runs_bytecode() {
+    assert_eq!(
+        run_bytecode("create mutable total = 0; while (total < 3) { set total = total + 1; } print(total);"),
+        Ok(vec!["3".to_owned()])
+    );
 }
