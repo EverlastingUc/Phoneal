@@ -113,11 +113,6 @@ fn write_opcode(output: &mut Vec<u8>, opcode: &Opcode) -> Result<(), Diagnostic>
             write_u8(output, 6);
             write_u32(output, *slot)?;
         }
-        Opcode::ResetLocals { start, count } => {
-            write_u8(output, 29);
-            write_u32(output, *start)?;
-            write_u32(output, *count)?;
-        }
         Opcode::Pop => write_u8(output, 7),
         Opcode::Print => write_u8(output, 8),
         Opcode::Negate => write_u8(output, 9),
