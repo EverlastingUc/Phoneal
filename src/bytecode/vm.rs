@@ -386,12 +386,11 @@ mod tests {
     #[test]
     fn enforces_immutable_bindings_at_runtime() {
         let mut program = compile_to_bytecode("create value = 1; print(value);").unwrap();
-        let store = program.entry.code.iter().position(|instruction| matches!(instruction.opcode, Opcode::StoreGlobal(_))).unwrap();
-        let slot = match program.entry.code[store].opcode { Opcode::StoreGlobal(slot) => slot, _ => unreachable!() };
-        program.entry.code.push(crate::bytecode::Instruction { opcode: Opcode::PushInteger(2), location: None });
-        program.entry.code.push(crate::bytecode::Instruction { opcode: Opcode::StoreGlobal(slot), location: None });
-        let halt = program.entry.code.len() - 1;
-        program.entry.code.swap(halt, halt - 2);
+        let store = program.entry.code.iter().position(|instruction| matches!(&instruction.opcode, Opcode::StoreGlobal(_))).unwrap();
+        let slot = match &program.entry.code[store].opcode { Opcode::StoreGlobal(slot) => *slot, _ => unreachable!() };
+        let insertion = program.entry.code.len() - 1;
+        program.entry.code.insert(insertion, crate::bytecode::Instruction { opcode: Opcode::PushInteger(2), location: None });
+        program.entry.code.insert(insertion + 1, crate::bytecode::Instruction { opcode: Opcode::StoreGlobal(slot), location: None });
         assert!(execute(&program).unwrap_err().message.contains("immutable global"));
     }
 
