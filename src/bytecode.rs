@@ -8,6 +8,9 @@ use crate::{
 };
 use std::collections::HashMap;
 
+mod validate;
+pub use validate::validate_structure;
+
 /// An instruction in Phoneal's compiler-facing stack bytecode.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Instruction {
@@ -326,7 +329,7 @@ pub fn compile(program: &TypedProgram) -> Result<BytecodeProgram, Diagnostic> {
     let mut entry = FunctionCompiler::new(&function_ids, &globals, std::iter::empty());
     entry.compile_statements(&program.statements, true)?;
     entry.emit(Opcode::Halt, None);
-    Ok(BytecodeProgram {
+    let bytecode = BytecodeProgram {
         functions,
         entry: BytecodeFunction {
             name: "<entry>".to_owned(),
@@ -336,7 +339,9 @@ pub fn compile(program: &TypedProgram) -> Result<BytecodeProgram, Diagnostic> {
             code: entry.code,
         },
         global_count: globals.len(),
-    })
+    };
+    validate_structure(&bytecode)?;
+    Ok(bytecode)
 }
 
 fn compile_function(
