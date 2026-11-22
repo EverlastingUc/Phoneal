@@ -148,7 +148,7 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 
 ### Phase 21 — Loop-Scoped Local Lifetimes
 
-**Complete; CI verification pending.**
+**Complete and CI-verified.**
 
 - Added `ResetLocals` bytecode for the contiguous local-slot range allocated inside each while body.
 - The VM clears those slots at the beginning of every iteration, preserving fresh immutable/mutable bindings across repeated block execution.
@@ -159,9 +159,9 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 
 ## Latest verified implementation
 
-- Code commit: `677c795c79a68c27ea15d5e1e3bde8bcc01f5924`
-- CI: [Phoneal CI #45059936966](https://github.com/EverlastingUc/Phoneal/actions/runs/45059936966)
-- Tests: **150 passed, 0 failed** (93 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
+- Code commit: `34df7606ee7e9c9c46c633cfa379009bfab2c381`
+- CI: [Phoneal CI #45060434966](https://github.com/EverlastingUc/Phoneal/actions/runs/45060434966)
+- Tests: **154 passed, 0 failed** (97 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
