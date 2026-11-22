@@ -95,7 +95,7 @@ This is a typed correctness verifier, not a complete security boundary. It does 
 
 **Complete and CI-verified.**
 
-- Versioned binary container with `PHNB` magic and version 1.
+- Versioned binary container with `PHNB` magic and version 2.
 - Little-endian header, payload length, and CRC-32 integrity check.
 - Serializes function metadata, primitive types, mutability, opcodes, and source locations.
 - Deserializer bounds file size, strings, function count, slot counts, and instruction counts.
@@ -150,11 +150,11 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 
 **Complete and CI-verified.**
 
-- Added `ResetLocals` bytecode for the contiguous local-slot range allocated inside each while body.
-- The VM clears those slots at the beginning of every iteration, preserving fresh immutable/mutable bindings across repeated block execution.
-- Nested loops reset only their own body range while outer-loop locals remain intact.
+- Added per-local declaration-instruction offsets to bytecode frame metadata.
+- The VM treats execution of that exact instruction as a fresh binding initialization, allowing immutable and mutable locals declared inside loop bodies to be reinitialized on each iteration.
+- Nested loops and blocks naturally reuse their declaration sites without clearing outer-scope locals.
 - `break` and `continue` flow back through the loop condition/body entry, so the next iteration performs the reset.
-- Typed verification tracks definite local initialization and clears initialization state at reset points.
+- Typed verification tracks definite local initialization and permits repeated execution only at declared initialization sites.
 - Tests cover immutable loop locals, nested loops, `continue`, serialization, and disassembly.
 
 ## Latest verified implementation
