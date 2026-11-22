@@ -280,7 +280,7 @@ impl Lowerer {
             Statement::Print(expression) => (
                 TypedStatementKind::Print(self.lower_expression(expression)?),
                 None,
-            )
+            ),
             Statement::Return { value, location } => {
                 let value = self.lower_expression(value)?;
                 let expected = self.return_types.last().copied().ok_or_else(|| {
