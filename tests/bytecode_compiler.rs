@@ -25,6 +25,15 @@ fn bytecode_vm_matches_ast_interpreter_on_supported_programs() {
 }
 
 #[test]
+fn serialized_bytecode_can_be_loaded_and_executed() {
+    let source = "function square(value: integer) returns integer { return value * value; } print(square(9));";
+    let program = compile_to_bytecode(source).unwrap();
+    let bytes = phoneal::bytecode::serialize(&program).unwrap();
+    let loaded = phoneal::bytecode::deserialize(&bytes).unwrap();
+    assert_eq!(phoneal::bytecode::execute_bytecode(&loaded).unwrap(), vec!["81"]);
+}
+
+#[test]
 fn bytecode_retains_source_locations() {
     let program = compile_to_bytecode("print(42);").unwrap();
     assert!(program.entry.code.iter().any(|instruction| instruction.location.is_some()));
