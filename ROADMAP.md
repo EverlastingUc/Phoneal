@@ -129,6 +129,7 @@ The listing is a debugging representation, not a source-level decompiler.
 **Implementation in progress; CI verification pending.**
 
 - `phnl execute <file.phnb>` reads an existing PHNB file.
+- CLI reads are capped at 1 MiB for source and 16 MiB for bytecode before decoding.
 - Deserialization performs file bounds, CRC-32, structural, and typed stack-flow verification before execution.
 - The verified program runs in the bytecode VM and prints captured output.
 - CLI integration tests execute a file produced by `phnl build`.
