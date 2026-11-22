@@ -30,22 +30,6 @@ This document records the roadmap state established by the current project speci
 
 The interpreter still executes the AST. The typed IR is the compiler-facing representation; it is not yet consumed by bytecode generation or a VM.
 
-## Latest verified state
-
-- Latest verified `main` commit: `ddca55bb54ee1b1b8e840cf9515bbb4e51f38b6d`
-- Successful CI: [Phoneal CI #45057359543](https://github.com/EverlastingUc/Phoneal/actions/runs/45057359543)
-- Tests: **115 passed, 0 failed** (67 unit, 42 compiler-pipeline, 3 typed-IR, 3 bytecode-compiler)
-
-- Branch: `main`
-- Verified implementation commit: `5495482e92b3024e0a68d64151edefae8d53d087`
-- Successful GitHub Actions run: [Phoneal CI #45055580840](https://github.com/EverlastingUc/Phoneal/actions/runs/45055580840)
-- Unit tests: **59 passed**
-- Compiler-pipeline integration tests: **42 passed**
-- Typed-IR integration tests: **3 passed**
-- Total: **104 passed, 0 failed**
-
-The successful CI run executed `cargo fmt --all`, `cargo fmt --all -- --check`, `cargo clippy --locked --all-targets --all-features`, `cargo build --locked`, `bash scripts/check_examples.sh`, and `cargo test --locked`.
-
 ### Phase 13 — Bytecode Compiler
 
 **Complete and CI-verified.**
