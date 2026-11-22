@@ -19,6 +19,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Functions can read global bindings but cannot mutate outer-scope bindings
 - Typed intermediate representation via `compile_to_ir(source)`, with source locations and independent IR validation
 - Stack-bytecode compiler via `compile_to_bytecode(source)`, with typed opcodes, local/global slots, function-call targets, patched branches/loops, and short-circuit control flow
+- Bytecode VM via `run_bytecode(source)` / `bytecode::execute_bytecode`, with checked arithmetic, typed frames, mutability enforcement, recursion and execution limits
 - Source-located lexer, parser, semantic, and runtime diagnostics
 - Comments and escaped string literals
 - CI-verified executable language examples (see `examples/README.md`)
@@ -47,7 +48,7 @@ print(factorial(5));
     Source -> Lexer -> Parser -> Semantic Analysis -> AST Interpreter
                                       \-> Typed IR -> future Bytecode Compiler -> VM
 
-The bytecode compiler is an intermediate compiler stage only. There is no security-grade bytecode verifier or VM yet, and the interpreter still executes the AST. This is not a sandbox. Do not execute untrusted Phoneal programs with it.
+The bytecode compiler and initial VM are implemented, but `run(source)` still uses the AST interpreter. The VM has runtime checks and bounded execution, but no security-grade bytecode verifier, heap quota, wall-clock limit, capability isolation, or process sandbox. Do not execute untrusted Phoneal programs with it.
 
 ## Documentation
 
