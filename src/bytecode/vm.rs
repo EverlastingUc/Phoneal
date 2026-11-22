@@ -412,6 +412,14 @@ mod tests {
     }
 
     #[test]
+    fn executes_mutable_function_locals() {
+        assert_eq!(
+            run("function count_from(start: integer) returns integer { create mutable current = start; while (current < 3) { set current = current + 1; } return current; } print(count_from(0));"),
+            Ok(vec!["3".to_owned()])
+        );
+    }
+
+    #[test]
     fn enforces_global_read_only_inside_functions() {
         let mut program = compile_to_bytecode("create mutable total = 1; function read() returns integer { return total; } print(read());").unwrap();
         let function = &mut program.functions[0];
