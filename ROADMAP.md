@@ -146,9 +146,9 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 
 ## Latest verified implementation
 
-- Code commit: `7f9bb4514caa03684d49acc56fbcc1d577ba51bc`
-- CI: [Phoneal CI #45059501523](https://github.com/EverlastingUc/Phoneal/actions/runs/45059501523)
-- Tests: **146 passed, 0 failed** (91 unit, 42 compiler-pipeline, 7 bytecode integration, 3 CLI, 3 typed IR)
+- Code commit: `1109d7b9514cc38f81333de03e6ddd3b871e2eae`
+- CI: [Phoneal CI #45059589618](https://github.com/EverlastingUc/Phoneal/actions/runs/45059589618)
+- Tests: **147 passed, 0 failed** (91 unit, 42 compiler-pipeline, 8 bytecode integration, 3 CLI, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
