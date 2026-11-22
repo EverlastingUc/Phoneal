@@ -31,20 +31,39 @@ fn push_type(stack: &mut Vec<PhonealType>, ty: PhonealType) -> Result<(), Diagno
     Ok(())
 }
 
+#[derive(Clone)]
+struct FlowState {
+    stack: Vec<PhonealType>,
+    initialized_locals: Vec<bool>,
+}
+
 fn enqueue(
     target: usize,
-    stack: &[PhonealType],
-    states: &mut [Option<Vec<PhonealType>>],
+    incoming: &FlowState,
+    states: &mut [Option<FlowState>],
     pending: &mut VecDeque<usize>,
 ) -> Result<(), Diagnostic> {
     let state = states.get_mut(target).ok_or_else(|| invalid("Control flow leaves the function instruction stream"))?;
     match state {
-        Some(existing) if existing != stack => {
-            Err(invalid("Control-flow paths reach an instruction with incompatible operand stacks"))
+        Some(existing) => {
+            if existing.stack != incoming.stack {
+                return Err(invalid("Control-flow paths reach an instruction with incompatible operand stacks"));
+            }
+            let mut changed = false;
+            for (existing_initialized, incoming_initialized) in existing.initialized_locals.iter_mut().zip(&incoming.initialized_locals) {
+                let merged = *existing_initialized && *incoming_initialized;
+                if merged != *existing_initialized {
+                    *existing_initialized = merged;
+                    changed = true;
+                }
+            }
+            if changed {
+                pending.push_back(target);
+            }
+            Ok(())
         }
-        Some(_) => Ok(()),
         None => {
-            *state = Some(stack.to_vec());
+            *state = Some(incoming.clone());
             pending.push_back(target);
             Ok(())
         }
@@ -56,24 +75,32 @@ fn verify_function(
     program: &BytecodeProgram,
     is_entry: bool,
 ) -> Result<(), Diagnostic> {
+    let mut initial_locals = vec![false; function.local_count];
+    initial_locals[..function.parameter_count].fill(true);
     let mut states = vec![None; function.code.len()];
     let mut pending = VecDeque::new();
-    states[0] = Some(Vec::new());
+    states[0] = Some(FlowState { stack: Vec::new(), initialized_locals: initial_locals });
     pending.push_back(0);
 
     while let Some(ip) = pending.pop_front() {
-        let mut stack = states[ip].clone().expect("queued instructions have a stack state");
+        let mut state = states[ip].clone().expect("queued instructions have a flow state");
         let opcode = &function.code[ip].opcode;
         let mut successors = Vec::with_capacity(2);
         let mut terminal = false;
 
         match opcode {
-            Opcode::PushInteger(_) => push_type(&mut stack, PhonealType::Integer)?,
+            Opcode::PushInteger(_) => push_type(&mut state.stack, PhonealType::Integer)?,
             Opcode::PushText(_) => push_type(&mut stack, PhonealType::Text)?,
             Opcode::PushBoolean(_) => push_type(&mut stack, PhonealType::Boolean)?,
-            Opcode::LoadLocal(slot) => push_type(&mut stack, function.local_types[*slot])?,
+            Opcode::LoadLocal(slot) => {
+                if !state.initialized_locals[*slot] {
+                    return Err(invalid(format!("Read from uninitialized local slot {slot}")));
+                }
+                push_type(&mut state.stack, function.local_types[*slot])?;
+            }
             Opcode::StoreLocal(slot) => {
-                pop_type(&mut stack, Some(function.local_types[*slot]))?;
+                pop_type(&mut state.stack, Some(function.local_types[*slot]))?;
+                state.initialized_locals[*slot] = true;
             }
             Opcode::LoadGlobal(slot) => push_type(&mut stack, program.global_types[*slot])?,
             Opcode::StoreGlobal(slot) => {
@@ -163,7 +190,7 @@ fn verify_function(
                 successors.push(ip + 1);
             }
             for target in successors {
-                enqueue(target, &stack, &mut states, &mut pending)?;
+                enqueue(target, &state, &mut states, &mut pending)?;
             }
         }
     }
