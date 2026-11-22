@@ -6,6 +6,7 @@ pub enum DiagnosticStage {
     Parsing,
     Semantic,
     Runtime,
+    Bytecode,
 }
 
 impl fmt::Display for DiagnosticStage {
@@ -15,6 +16,7 @@ impl fmt::Display for DiagnosticStage {
             Self::Parsing => "parser",
             Self::Semantic => "semantic",
             Self::Runtime => "runtime",
+            Self::Bytecode => "bytecode",
         })
     }
 }
