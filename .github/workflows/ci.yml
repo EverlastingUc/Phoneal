@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  statuses: write
+
 jobs:
   test:
     name: Format, lint, build and test
@@ -25,3 +29,22 @@ jobs:
         run: bash scripts/check_examples.sh
       - name: Test
         run: cargo test --locked
+      - name: Publish verification status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        run: |
+          if [ "$RESULT" = "success" ]; then
+            state=success
+            description="All Phoneal checks passed"
+          else
+            state=failure
+            description="One or more Phoneal checks failed"
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \\
+            --method POST \\
+            --field state="$state" \\
+            --field context="Phoneal CI" \\
+            --field description="$description" \\
+            --field target="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
