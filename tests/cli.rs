@@ -44,6 +44,13 @@ fn cli_builds_inspects_and_runs_phnb_files() {
     assert!(listing.contains("double(integer) -> integer"));
     assert!(listing.contains("Call #0 double"));
 
+    let execute = Command::new(binary)
+        .args(["execute", output_path.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert!(execute.status.success(), "{}", String::from_utf8_lossy(&execute.stderr));
+    assert_eq!(String::from_utf8(execute.stdout).unwrap().trim(), "18");
+
     let run = Command::new(binary)
         .args(["run-bytecode", source_path.to_str().unwrap()])
         .output()
