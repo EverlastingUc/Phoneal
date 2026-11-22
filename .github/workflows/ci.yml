@@ -19,27 +19,43 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - name: Check formatting
+      - id: format
+        name: Check formatting
+        continue-on-error: true
         run: cargo fmt --all -- --check
-      - name: Run Clippy
+      - id: clippy
+        name: Run Clippy
+        continue-on-error: true
         run: cargo clippy --locked --all-targets --all-features
-      - name: Build
+      - id: build
+        name: Build
+        continue-on-error: true
         run: cargo build --locked
-      - name: Check language examples
+      - id: examples
+        name: Check language examples
+        continue-on-error: true
         run: bash scripts/check_examples.sh
-      - name: Test
+      - id: tests
+        name: Test
+        continue-on-error: true
         run: cargo test --locked
       - name: Publish verification status
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-          RESULT: ${{ job.status }}
+          FORMAT: ${{ steps.format.outcome }}
+          CLIPPY: ${{ steps.clippy.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          EXAMPLES: ${{ steps.examples.outcome }}
+          TESTS: ${{ steps.tests.outcome }}
         run: |
-          if [ "$RESULT" = "success" ]; then
+          results="format=$FORMAT clippy=$CLIPPY build=$BUILD examples=$EXAMPLES tests=$TESTS"
+          if [ "$FORMAT" = "success" ] && [ "$CLIPPY" = "success" ] && [ "$BUILD" = "success" ] && [ "$EXAMPLES" = "success" ] && [ "$TESTS" = "success" ]; then
             state=success
             description="All Phoneal checks passed"
           else
             state=failure
-            description="One or more Phoneal checks failed"
+            description="$results"
           fi
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" --method POST --field state="$state" --field context="Phoneal CI" --field description="$description" --field target="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" --method POST --field state="$state" --field context="Phoneal CI" --field description="$description" --field target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          [ "$state" = "success" ]
