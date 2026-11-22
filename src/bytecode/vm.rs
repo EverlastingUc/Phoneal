@@ -174,9 +174,12 @@ impl<'a> Vm<'a> {
     }
 
     fn call(&mut self, function: usize, argument_count: usize, location: Option<&SourceLocation>) -> Result<(), Diagnostic> {
-        let callee = self.program.functions.get(function)
-            .ok_or_else(|| Self::fail("Call references an unknown function", location))?;
-        if argument_count != callee.parameter_count || argument_count != callee.parameter_types.len() {
+        let (parameter_count, parameter_types, local_count) = {
+            let callee = self.program.functions.get(function)
+                .ok_or_else(|| Self::fail("Call references an unknown function", location))?;
+            (callee.parameter_count, callee.parameter_types.clone(), callee.local_count)
+        };
+        if argument_count != parameter_count || argument_count != parameter_types.len() {
             return Err(Self::fail("Function call argument count does not match its signature", location));
         }
         if self.frames.len().saturating_sub(1) >= MAX_CALL_DEPTH {
@@ -190,12 +193,12 @@ impl<'a> Vm<'a> {
             arguments.push(self.pop(location)?);
         }
         arguments.reverse();
-        for (argument, expected) in arguments.iter().zip(&callee.parameter_types) {
+        for (argument, expected) in arguments.iter().zip(&parameter_types) {
             if !argument.has_type(*expected) {
                 return Err(Self::fail("Function argument type does not match its signature", location));
             }
         }
-        let mut locals = vec![None; callee.local_count];
+        let mut locals = vec![None; local_count];
         for (slot, argument) in arguments.into_iter().enumerate() {
             locals[slot] = Some(argument);
         }
@@ -210,17 +213,19 @@ impl<'a> Vm<'a> {
 
     fn return_from_function(&mut self, location: Option<&SourceLocation>) -> Result<(), Diagnostic> {
         let value = self.pop(location)?;
-        let frame = self.frames.last().ok_or_else(|| Self::fail("Return without a call frame", location))?;
-        let function_index = frame.function.ok_or_else(|| Self::fail("Entry bytecode cannot return", location))?;
-        let function = &self.program.functions[function_index];
-        let expected = function.return_type.ok_or_else(|| Self::fail("Function return type metadata is missing", location))?;
+        let (function_index, base) = {
+            let frame = self.frames.last().ok_or_else(|| Self::fail("Return without a call frame", location))?;
+            let function_index = frame.function.ok_or_else(|| Self::fail("Entry bytecode cannot return", location))?;
+            (function_index, frame.stack_base)
+        };
+        let expected = self.program.functions[function_index].return_type
+            .ok_or_else(|| Self::fail("Function return type metadata is missing", location))?;
         if !value.has_type(expected) {
             return Err(Self::fail("Function returned a value of the wrong type", location));
         }
-        if self.stack.len() != frame.stack_base {
+        if self.stack.len() != base {
             return Err(Self::fail("Function returned with an unbalanced operand stack", location));
         }
-        let base = frame.stack_base;
         self.frames.pop();
         self.stack.truncate(base);
         self.push(value, location)
