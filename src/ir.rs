@@ -551,23 +551,23 @@ pub fn lower(statements: &[Statement]) -> Result<TypedProgram, Diagnostic> {
 
 /// Validates type consistency and control-flow placement in an already lowered program.
 pub fn validate(program: &TypedProgram) -> Result<(), Diagnostic> {
-    let signatures: HashMap<_, _> = program
-        .functions
-        .iter()
-        .map(|function| {
-            (
-                function.name.clone(),
-                (
-                    function
-                        .parameters
-                        .iter()
-                        .map(|parameter| parameter.ty)
-                        .collect::<Vec<_>>(),
-                    function.return_type,
-                ),
-            )
-        })
-        .collect();
+    let mut signatures = HashMap::new();
+    for function in &program.functions {
+        let signature = (
+            function
+                .parameters
+                .iter()
+                .map(|parameter| parameter.ty)
+                .collect(),
+            function.return_type,
+        );
+        if signatures.insert(function.name.clone(), signature).is_some() {
+            return Err(Lowerer::error(
+                "IR contains a duplicate function declaration",
+                Some(&function.location),
+            ));
+        }
+    }
     let mut globals = HashMap::new();
     for statement in &program.statements {
         if let TypedStatementKind::Let { name, mutable, ty, .. } = &statement.kind
@@ -602,10 +602,29 @@ pub fn validate(program: &TypedProgram) -> Result<(), Diagnostic> {
             0,
             Some(1),
         )?;
+        if !guarantees_return(&function.body) {
+            return Err(Lowerer::error(
+                "IR function does not return a value on every path",
+                Some(&function.location),
+            ));
+        }
     }
 
     let mut scopes = vec![HashMap::new()];
     validate_statements(&program.statements, &signatures, &mut scopes, None, 0, None)
+}
+
+fn guarantees_return(statements: &[TypedStatement]) -> bool {
+    statements.iter().any(|statement| match &statement.kind {
+        TypedStatementKind::Return(_) => true,
+        TypedStatementKind::Block(body) => guarantees_return(body),
+        TypedStatementKind::If {
+            then_branch,
+            else_branch: Some(other),
+            ..
+        } => guarantees_return(then_branch) && guarantees_return(other),
+        _ => false,
+    })
 }
 
 fn validate_statements(
@@ -943,6 +962,16 @@ mod tests {
             &program.functions[0].body[0].kind,
             TypedStatementKind::While { .. }
         ));
+    }
+
+    #[test]
+    fn validator_rejects_functions_without_return_coverage() {
+        let mut program = lower_source(
+            "function choose(flag: boolean) returns integer { if (flag) { return 1; } else { return 2; } }",
+        )
+        .unwrap();
+        program.functions[0].body.pop();
+        assert!(validate(&program).is_err());
     }
 
     #[test]
