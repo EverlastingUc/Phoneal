@@ -20,6 +20,7 @@ Phoneal is a security-first, general-purpose programming language project. The d
 - Typed intermediate representation via `compile_to_ir(source)`, with source locations and independent IR validation
 - Stack-bytecode compiler via `compile_to_bytecode(source)`, with typed opcodes, local/global slots, function-call targets, patched branches/loops, and short-circuit control flow
 - Typed bytecode verifier for stack types, control-flow merges, function signatures, and global-write restrictions
+- Versioned PHNB bytecode serialization/deserialization with bounded parsing, CRC-32 integrity checks, and verification on load
 - Bytecode VM via `run_bytecode(source)` / `bytecode::execute_bytecode`, with checked arithmetic, typed frames, mutability enforcement, recursion and execution limits
 - Source-located lexer, parser, semantic, bytecode, and runtime diagnostics
 - Comments and escaped string literals
@@ -55,6 +56,7 @@ The bytecode compiler and initial VM are implemented. `run(source)` still uses t
 ## Documentation
 
 - [Bytecode instruction format and compiler contract](docs/bytecode.md)
+- [PHNB file format](docs/bytecode-format.md)
 - [Bytecode VM runtime contract](docs/vm.md)
 - [Complete syntax design and implementation status](Syntax.md)
 - [Implemented language subset](LANGUAGE_SPEC.md)
