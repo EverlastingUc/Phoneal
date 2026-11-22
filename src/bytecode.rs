@@ -58,7 +58,10 @@ pub enum Opcode {
 pub struct BytecodeFunction {
     pub name: String,
     pub parameter_count: usize,
+    pub parameter_types: Vec<PhonealType>,
     pub local_count: usize,
+    pub local_types: Vec<PhonealType>,
+    pub local_mutability: Vec<bool>,
     pub return_type: Option<PhonealType>,
     pub code: Vec<Instruction>,
 }
@@ -69,6 +72,8 @@ pub struct BytecodeProgram {
     pub functions: Vec<BytecodeFunction>,
     pub entry: BytecodeFunction,
     pub global_count: usize,
+    pub global_types: Vec<PhonealType>,
+    pub global_mutability: Vec<bool>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -83,6 +88,8 @@ struct FunctionCompiler<'a> {
     scopes: Vec<HashMap<String, Storage>>,
     code: Vec<Instruction>,
     local_count: usize,
+    local_types: Vec<PhonealType>,
+    local_mutability: Vec<bool>,
     loops: Vec<LoopPatch>,
 }
 
@@ -96,12 +103,15 @@ impl<'a> FunctionCompiler<'a> {
     fn new(
         function_ids: &'a HashMap<String, usize>,
         globals: &'a HashMap<String, usize>,
-        parameters: impl IntoIterator<Item = (String, usize)>,
+        parameters: impl IntoIterator<Item = (String, usize, PhonealType)>,
     ) -> Self {
-        let parameter_scope = parameters
-            .into_iter()
-            .map(|(name, slot)| (name, Storage::Local(slot)))
-            .collect();
+        let parameters: Vec<_> = parameters.into_iter().collect();
+        let mut parameter_scope = HashMap::new();
+        let mut local_types = vec![PhonealType::Integer; parameters.len()];
+        for (name, slot, ty) in parameters {
+            local_types[slot] = ty;
+            parameter_scope.insert(name, Storage::Local(slot));
+        }
         Self {
             function_ids,
             globals,
@@ -110,7 +120,9 @@ impl<'a> FunctionCompiler<'a> {
                 .map(|(name, slot)| (name.clone(), Storage::Global(*slot)))
                 .collect(), parameter_scope],
             code: Vec::new(),
-            local_count: 0,
+            local_count: local_types.len(),
+            local_mutability: vec![false; local_types.len()],
+            local_types,
             loops: Vec::new(),
         }
     }
@@ -128,12 +140,14 @@ impl<'a> FunctionCompiler<'a> {
         }
     }
 
-    fn declare(&mut self, name: &str, global: bool) -> Storage {
+    fn declare(&mut self, name: &str, global: bool, ty: PhonealType, mutable: bool) -> Storage {
         if global {
             return Storage::Global(self.globals[name]);
         }
         let slot = self.local_count;
         self.local_count += 1;
+        self.local_types.push(ty);
+        self.local_mutability.push(mutable);
         self.scopes.last_mut().expect("scope exists").insert(name.to_owned(), Storage::Local(slot));
         Storage::Local(slot)
     }
@@ -166,9 +180,9 @@ impl<'a> FunctionCompiler<'a> {
     fn compile_statement(&mut self, statement: &TypedStatement, top_level: bool) -> Result<(), Diagnostic> {
         let location = statement.location.as_ref();
         match &statement.kind {
-            TypedStatementKind::Let { name, value, .. } => {
+            TypedStatementKind::Let { name, mutable, ty, value } => {
                 self.compile_expression(value)?;
-                let storage = self.declare(name, top_level && self.scopes.len() == 2);
+                let storage = self.declare(name, top_level && self.scopes.len() == 2, *ty, *mutable);
                 self.store(storage, location);
             }
             TypedStatementKind::Assign { name, value } => {
@@ -315,11 +329,15 @@ pub fn compile(program: &TypedProgram) -> Result<BytecodeProgram, Diagnostic> {
 
     let function_ids: HashMap<_, _> = program.functions.iter().enumerate()
         .map(|(index, function)| (function.name.clone(), index)).collect();
-    let globals: HashMap<_, _> = program.statements.iter().filter_map(|statement| {
-        if let TypedStatementKind::Let { name, .. } = &statement.kind {
-            Some(name.clone())
+    let global_bindings: Vec<_> = program.statements.iter().filter_map(|statement| {
+        if let TypedStatementKind::Let { name, ty, mutable, .. } = &statement.kind {
+            Some((name.clone(), *ty, *mutable))
         } else { None }
-    }).enumerate().map(|(index, name)| (name, index)).collect();
+    }).collect();
+    let globals: HashMap<_, _> = global_bindings.iter().enumerate()
+        .map(|(index, (name, _, _))| (name.clone(), index)).collect();
+    let global_types = global_bindings.iter().map(|(_, ty, _)| *ty).collect::<Vec<_>>();
+    let global_mutability = global_bindings.iter().map(|(_, _, mutable)| *mutable).collect::<Vec<_>>();
 
     let mut functions = Vec::with_capacity(program.functions.len());
     for function in &program.functions {
@@ -335,10 +353,15 @@ pub fn compile(program: &TypedProgram) -> Result<BytecodeProgram, Diagnostic> {
             name: "<entry>".to_owned(),
             parameter_count: 0,
             local_count: entry.local_count,
+            local_types: entry.local_types,
+            local_mutability: entry.local_mutability,
+            parameter_types: Vec::new(),
             return_type: None,
             code: entry.code,
         },
         global_count: globals.len(),
+        global_types,
+        global_mutability,
     };
     validate_structure(&bytecode)?;
     Ok(bytecode)
@@ -350,15 +373,18 @@ fn compile_function(
     globals: &HashMap<String, usize>,
 ) -> Result<BytecodeFunction, Diagnostic> {
     let parameters = function.parameters.iter().enumerate()
-        .map(|(slot, parameter)| (parameter.name.clone(), slot)).collect::<Vec<_>>();
+        .map(|(slot, parameter)| (parameter.name.clone(), slot, parameter.ty)).collect::<Vec<_>>();
+    let parameter_types = function.parameters.iter().map(|parameter| parameter.ty).collect::<Vec<_>>();
     let mut compiler = FunctionCompiler::new(function_ids, globals, parameters);
-    compiler.local_count = function.parameters.len();
     compiler.compile_statements(&function.body, false)?;
     compiler.emit(Opcode::Unreachable, Some(&function.location));
     Ok(BytecodeFunction {
         name: function.name.clone(),
         parameter_count: function.parameters.len(),
+        parameter_types,
         local_count: compiler.local_count,
+        local_types: compiler.local_types,
+        local_mutability: compiler.local_mutability,
         return_type: Some(function.return_type),
         code: compiler.code,
     })
