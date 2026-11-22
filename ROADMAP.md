@@ -138,7 +138,7 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 
 ### Phase 20 — CLI Help and Version Flags
 
-**Implementation in progress; CI verification pending.**
+**Complete and CI-verified.**
 
 - `phnl --help` and `phnl -h` print command usage.
 - `phnl --version` and `phnl -V` print the package version from Cargo metadata.
@@ -146,9 +146,9 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 
 ## Latest verified implementation
 
-- Code commit: `1109d7b9514cc38f81333de03e6ddd3b871e2eae`
-- CI: [Phoneal CI #45059589618](https://github.com/EverlastingUc/Phoneal/actions/runs/45059589618)
-- Tests: **147 passed, 0 failed** (91 unit, 42 compiler-pipeline, 8 bytecode integration, 3 CLI, 3 typed IR)
+- Code commit: `c65d053ec4c87477c21d749a416cf26ddbd218a8`
+- CI: [Phoneal CI #45059631012](https://github.com/EverlastingUc/Phoneal/actions/runs/45059631012)
+- Tests: **148 passed, 0 failed** (91 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
