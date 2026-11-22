@@ -126,7 +126,7 @@ The listing is a debugging representation, not a source-level decompiler.
 
 ### Phase 19 — Precompiled Bytecode Execution CLI
 
-**Implementation in progress; CI verification pending.**
+**Complete and CI-verified.**
 
 - `phnl execute <file.phnb>` reads an existing PHNB file.
 - CLI reads are capped at 1 MiB for source and 16 MiB for bytecode before decoding.
@@ -138,9 +138,9 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 
 ## Latest verified implementation
 
-- Code commit: `6c680367b015956ea852bba6751302aa4f50a2b4`
-- CI: [Phoneal CI #45059293566](https://github.com/EverlastingUc/Phoneal/actions/runs/45059293566)
-- Tests: **145 passed, 0 failed** (91 unit, 42 compiler-pipeline, 7 bytecode integration, 2 CLI, 3 typed IR)
+- Code commit: `7f9bb4514caa03684d49acc56fbcc1d577ba51bc`
+- CI: [Phoneal CI #45059501523](https://github.com/EverlastingUc/Phoneal/actions/runs/45059501523)
+- Tests: **146 passed, 0 failed** (91 unit, 42 compiler-pipeline, 7 bytecode integration, 3 CLI, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
