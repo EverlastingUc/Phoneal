@@ -8,7 +8,7 @@
 - IR API: `bytecode::compile(&TypedProgram)` compiles an existing typed IR program.
 - Output: `BytecodeProgram`, containing indexed functions, an entry function, and a global-slot count.
 
-The compiler validates the typed IR before lowering it. It then validates the resulting bytecode structure before returning it.
+The compiler validates the typed IR before lowering it. It then performs structural validation and typed stack/control-flow verification before returning bytecode. `bytecode::verify(&BytecodeProgram)` is also called by the VM before execution.
 
 ## Function and storage model
 
@@ -65,6 +65,12 @@ This is deliberately **not** a security verifier. It does not prove stack-depth 
 ## VM execution
 
 The initial VM executes these instructions with typed local/global slots, mutability enforcement, function frames, checked arithmetic, and bounded instruction/call/stack/text/output usage. See [vm.md](vm.md) for its runtime contract. The original `run(source)` API still uses the AST interpreter; `run_bytecode(source)` selects the bytecode path.
+
+## Typed bytecode verification
+
+`bytecode::verify` performs control-flow data-flow analysis with a typed operand stack. It checks stack underflow, operand types, branch merge consistency, call argument and result types, return-stack balance, entry halt balance, and forbids function bytecode from writing globals. The verifier starts each function with an empty relative operand stack; call instructions are checked using the callee signature.
+
+This verifier is a compiler/runtime correctness layer. It does not prove definite initialization, memory safety for arbitrary host extensions, aggregate heap usage, wall-clock bounds, or sandbox isolation.
 
 ## Deliberate non-goals
 
