@@ -8,9 +8,11 @@ use crate::{
 };
 use std::collections::HashMap;
 
+mod format;
 mod validate;
 mod vm;
 mod verify;
+pub use format::{deserialize, serialize};
 pub use validate::validate_structure;
 pub use verify::verify;
 pub use vm::{execute as execute_bytecode, Value as BytecodeValue};
