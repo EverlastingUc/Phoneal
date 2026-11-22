@@ -36,6 +36,7 @@ pub enum Opcode {
     StoreLocal(usize),
     LoadGlobal(usize),
     StoreGlobal(usize),
+    ResetLocals { start: usize, count: usize },
     Pop,
     Print,
     Negate,
@@ -232,10 +233,14 @@ impl<'a> FunctionCompiler<'a> {
                 let condition_start = self.code.len();
                 self.compile_expression(condition)?;
                 let exit_jump = self.emit(Opcode::JumpIfFalse(usize::MAX), location);
+                let local_start = self.local_count;
+                let reset_instruction = self.emit(Opcode::ResetLocals { start: local_start, count: 0 }, location);
                 self.loops.push(LoopPatch { continue_target: condition_start, breaks: Vec::new() });
                 self.scopes.push(HashMap::new());
                 self.compile_statements(body, false)?;
                 self.scopes.pop();
+                let local_count = self.local_count - local_start;
+                self.code[reset_instruction].opcode = Opcode::ResetLocals { start: local_start, count: local_count };
                 self.emit(Opcode::Jump(condition_start), location);
                 let exit = self.code.len();
                 self.patch_jump(exit_jump, exit);
