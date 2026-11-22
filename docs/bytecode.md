@@ -29,7 +29,6 @@ The bytecode is stack-oriented. The initial VM is exposed as `bytecode::execute_
 | `PushInteger`, `PushText`, `PushBoolean` | +1 | Push a constant |
 | `LoadLocal`, `LoadGlobal` | +1 | Load a slot |
 | `StoreLocal`, `StoreGlobal` | -1 | Store and consume the top value |
-| `ResetLocals` | 0 | Clear the local-slot range allocated in a while-body before each iteration; the verifier marks those slots uninitialized |
 | `Pop` | -1 | Discard the top value |
 | `Print` | -1 | Print and consume the top value |
 | `Negate`, `Not` | 0 | Replace the top value with its unary result |
