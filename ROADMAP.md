@@ -180,6 +180,17 @@ This phase delivers the design baseline only. It does not add a sandbox, capabil
 
 This is a policy model only. No VM operation, host API, IPC broker, or OS permission enforcement consumes these grants yet.
 
+### Phase 24 — Bounded IPC Frame Protocol
+
+**Implemented; CI verification pending.**
+
+- Added PHIP protocol version 1 with fixed magic, version, message kind, reserved flags, request ID, payload length, and CRC-32.
+- Added a 1 MiB maximum payload and strict length, magic, version, flags, kind, and checksum validation.
+- Added frame kinds for handshake, source/bytecode execution, output, capability request/response, completion, error, and cancellation.
+- Added round-trip tests for all message kinds and malformed/truncated/oversized frame tests.
+
+This is a framing library only. It does not create IPC transports, validate message-specific payload schemas, authorize requests, or spawn a worker.
+
 ## Latest verified implementation
 
 - Code commit: `34df7606ee7e9c9c46c633cfa379009bfab2c381`
