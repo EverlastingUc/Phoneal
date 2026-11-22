@@ -9,6 +9,7 @@ The Rust CLI currently exposes five commands:
 | `phnl check <file.phnl>` | Run lexer, parser, and semantic validation |
 | `phnl build <file.phnl> --output <file.phnb>` | Compile, verify, and serialize PHNB bytecode |
 | `phnl inspect <file.phnb>` | Deserialize, verify, and print bytecode disassembly |
+| `phnl execute <file.phnb>` | Deserialize, verify, and execute a precompiled bytecode file |
 
 ## Examples
 
@@ -18,6 +19,7 @@ phnl run examples/factorial.phnl
 phnl run-bytecode examples/factorial.phnl
 phnl build examples/factorial.phnl --output factorial.phnb
 phnl inspect factorial.phnb
+phnl execute factorial.phnb
 ```
 
 ## Execution distinction
