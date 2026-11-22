@@ -278,9 +278,9 @@ impl Analyzer {
     }
     fn infer_expression(&mut self, e: &Expression) -> Option<PhonealType> {
         match e {
-            Expression::Integer(_) => Some(PhonealType::Integer),
-            Expression::String(_) => Some(PhonealType::Text),
-            Expression::Boolean(_) => Some(PhonealType::Boolean),
+            Expression::Integer(_, _) => Some(PhonealType::Integer),
+            Expression::String(_, _) => Some(PhonealType::Text),
+            Expression::Boolean(_, _) => Some(PhonealType::Boolean),
             Expression::Variable { name, location } => match self.lookup(name) {
                 Some(binding) => binding.ty,
                 None => {
