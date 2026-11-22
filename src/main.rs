@@ -1,4 +1,7 @@
-use std::{env, fs, process};
+use std::{env, fs, io::Read, process, fs::File};
+
+const MAX_SOURCE_BYTES: usize = 1024 * 1024;
+const MAX_BYTECODE_BYTES: usize = 16 * 1024 * 1024;
 
 fn print_usage() {
     eprintln!("Phoneal 0.1.0 — Rust-hosted language prototype");
@@ -11,18 +14,31 @@ fn print_usage() {
     eprintln!("  phnl execute <file.phnb>");
 }
 
+fn read_limited(path: &str, maximum: usize) -> Result<Vec<u8>, String> {
+    let file = File::open(path).map_err(|error| format!("Cannot read {path}: {error}"))?;
+    let mut bytes = Vec::new();
+    file.take((maximum + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("Cannot read {path}: {error}"))?;
+    if bytes.len() > maximum {
+        return Err(format!("{path} exceeds the {maximum}-byte input limit"));
+    }
+    Ok(bytes)
+}
+
 fn read_source(path: &str) -> Result<String, String> {
     if !path.ends_with(".phnl") {
         return Err("Expected a .phnl source file".to_owned());
     }
-    fs::read_to_string(path).map_err(|error| format!("Cannot read {path}: {error}"))
+    String::from_utf8(read_limited(path, MAX_SOURCE_BYTES)?)
+        .map_err(|_| format!("{path} is not valid UTF-8"))
 }
 
 fn read_bytecode(path: &str) -> Result<Vec<u8>, String> {
     if !path.ends_with(".phnb") {
         return Err("Expected a .phnb bytecode file".to_owned());
     }
-    fs::read(path).map_err(|error| format!("Cannot read {path}: {error}"))
+    read_limited(path, MAX_BYTECODE_BYTES)
 }
 
 fn run_source(path: &str, use_bytecode: bool) -> Result<(), String> {
