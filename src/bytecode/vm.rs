@@ -1,4 +1,4 @@
-use super::{validate_structure, BytecodeFunction, BytecodeProgram, Opcode};
+use super::{verify, BytecodeFunction, BytecodeProgram, Opcode};
 use crate::{
     diagnostic::{Diagnostic, DiagnosticStage, SourceLocation},
     types::PhonealType,
@@ -368,7 +368,7 @@ impl<'a> Vm<'a> {
 /// Executes compiler-produced bytecode with bounded steps, call depth, operand stack,
 /// individual text values, and captured output. This VM is not a security sandbox.
 pub fn execute(program: &BytecodeProgram) -> Result<Vec<String>, Diagnostic> {
-    validate_structure(program).map_err(|error| {
+    verify(program).map_err(|error| {
         Diagnostic::new(DiagnosticStage::Runtime, format!("Invalid bytecode structure: {}", error.message))
     })?;
     Vm::new(program).execute()
