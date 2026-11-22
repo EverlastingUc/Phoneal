@@ -278,8 +278,8 @@ mod tests {
         ).unwrap();
         let function = &mut program.functions[0];
         let return_offset = function.code.iter().position(|instruction| matches!(&instruction.opcode, Opcode::Return)).unwrap();
-        function.code.insert(return_offset, Opcode::PushInteger(2).into_instruction());
-        function.code.insert(return_offset + 1, Opcode::StoreLocal(0).into_instruction());
+        function.code.insert(return_offset, super::super::Instruction { opcode: Opcode::PushInteger(2), location: None });
+        function.code.insert(return_offset + 1, super::super::Instruction { opcode: Opcode::StoreLocal(0), location: None });
         assert!(verify(&program).unwrap_err().message.contains("immutable local"));
     }
 
