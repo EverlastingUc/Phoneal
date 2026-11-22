@@ -29,7 +29,7 @@ Phoneal does not yet have:
 - a sandbox process boundary;
 - hostile-input fuzzing and independent security review.
 
-The structural bytecode checks are intended to catch compiler-output mistakes. They are not a security verifier and must not be treated as protection against maliciously constructed bytecode.
+Structural bytecode checks and typed stack-flow verification are intended to catch malformed compiler output and many invalid instruction streams. They do not prove definite initialization, total memory use, or safe host-resource isolation, and must not be treated as protection against every malicious bytecode program.
 
 The security-first goal is not a claim that Phoneal is secure or unhackable. A sandbox milestone will require a threat model, deny-by-default capability design, independent enforcement, resource accounting, hostile-input tests, and security review.
 
