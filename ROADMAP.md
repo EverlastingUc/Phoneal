@@ -89,11 +89,25 @@ The VM is an execution engine, not a sandbox. It uses a typed bytecode verifier 
 
 This is a typed correctness verifier, not a complete security boundary. It does not prove definite initialization or impose aggregate memory/wall-clock limits.
 
+### Phase 16 — PHNB Bytecode Serialization
+
+**Complete and CI-verified.**
+
+- Versioned binary container with `PHNB` magic and version 1.
+- Little-endian header, payload length, and CRC-32 integrity check.
+- Serializes function metadata, primitive types, mutability, opcodes, and source locations.
+- Deserializer bounds file size, strings, function count, slot counts, and instruction counts.
+- Rejects invalid tags, flags, UTF-8, truncated payloads, length mismatches, trailing data, and checksum failures.
+- Deserialization runs structural and typed bytecode verification before returning a program.
+- Public APIs: `bytecode::serialize` and `bytecode::deserialize`.
+
+CRC-32 detects accidental corruption; it is not cryptographic authentication. PHNB files are not trusted merely because they deserialize successfully.
+
 ## Latest verified implementation
 
-- Code commit: `a70315ff0544707a606a5140d77efdae54e3a025`
-- CI: [Phoneal CI #45058586703](https://github.com/EverlastingUc/Phoneal/actions/runs/45058586703)
-- Tests: **133 passed, 0 failed** (83 unit, 42 compiler-pipeline, 5 bytecode integration, 3 typed IR)
+- Code commit: `0a3f015e661ff86ffacc8e13e04df86ad70ea87e`
+- CI: [Phoneal CI #45058936495](https://github.com/EverlastingUc/Phoneal/actions/runs/45058936495)
+- Tests: **139 passed, 0 failed** (88 unit, 42 compiler-pipeline, 6 bytecode integration, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
