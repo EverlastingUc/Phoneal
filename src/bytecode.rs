@@ -10,7 +10,9 @@ use std::collections::HashMap;
 
 mod validate;
 mod vm;
+mod verify;
 pub use validate::validate_structure;
+pub use verify::verify;
 pub use vm::{execute as execute_bytecode, Value as BytecodeValue};
 
 /// An instruction in Phoneal's compiler-facing stack bytecode.
@@ -365,7 +367,7 @@ pub fn compile(program: &TypedProgram) -> Result<BytecodeProgram, Diagnostic> {
         global_types,
         global_mutability,
     };
-    validate_structure(&bytecode)?;
+    verify(&bytecode)?;
     Ok(bytecode)
 }
 
