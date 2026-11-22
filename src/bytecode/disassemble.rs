@@ -1,5 +1,5 @@
 use super::{verify, BytecodeFunction, BytecodeProgram, Opcode};
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, DiagnosticStage};
 use std::fmt::Write;
 
 /// Produces a stable, human-readable listing of a verified bytecode program.
@@ -59,7 +59,7 @@ fn write_opcode(
     opcode: &Opcode,
     program: &BytecodeProgram,
 ) -> Result<(), Diagnostic> {
-    match opcode {
+    let result = match opcode {
         Opcode::PushInteger(value) => write!(output, "PushInteger {value}"),
         Opcode::PushText(value) => write!(output, "PushText {:?}", value),
         Opcode::PushBoolean(value) => write!(output, "PushBoolean {value}"),
@@ -86,14 +86,14 @@ fn write_opcode(
         Opcode::Jump(target) => write!(output, "Jump {target:04}"),
         Opcode::JumpIfFalse(target) => write!(output, "JumpIfFalse {target:04}"),
         Opcode::Call { function, argument_count } => {
-            let target = program.functions.get(*function)
-                .ok_or_else(|| Diagnostic::bytecode("Disassembler found an unknown function index"))?;
-            write!(output, "Call #{function} {} ({argument_count} args)", target.name)
+            let target_name = program.functions[*function].name.as_str();
+            write!(output, "Call #{function} {target_name} ({argument_count} args)")
         }
         Opcode::Return => write!(output, "Return"),
         Opcode::Halt => write!(output, "Halt"),
         Opcode::Unreachable => write!(output, "Unreachable"),
-    }.map_err(|_| Diagnostic::bytecode("Could not format bytecode instruction"))?;
+    };
+    result.map_err(|_| Diagnostic::new(DiagnosticStage::Bytecode, "Could not format bytecode instruction"))?;
     Ok(())
 }
 
