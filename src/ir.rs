@@ -38,6 +38,29 @@ pub struct TypedExpression {
     pub location: Option<SourceLocation>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnaryOperator {
+    Negate,
+    Not,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BinaryOperator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Remainder,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+    Equal,
+    NotEqual,
+    And,
+    Or,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypedExpressionKind {
     Integer(i64),
@@ -49,12 +72,12 @@ pub enum TypedExpressionKind {
         arguments: Vec<TypedExpression>,
     },
     Unary {
-        operator: TokenKind,
+        operator: UnaryOperator,
         operand: Box<TypedExpression>,
     },
     Binary {
         left: Box<TypedExpression>,
-        operator: TokenKind,
+        operator: BinaryOperator,
         right: Box<TypedExpression>,
     },
 }
@@ -469,9 +492,19 @@ impl Lowerer {
                 operand,
             } => {
                 let operand = self.lower_expression(operand)?;
+                let operator = match operator {
+                    TokenKind::Not => UnaryOperator::Not,
+                    TokenKind::Minus => UnaryOperator::Negate,
+                    _ => {
+                        return Err(Self::error(
+                            "Unsupported unary operator in AST",
+                            Some(operator_location),
+                        ))
+                    }
+                };
                 let ty = match (operator, operand.ty) {
-                    (TokenKind::Not, PhonealType::Boolean) => PhonealType::Boolean,
-                    (TokenKind::Minus, PhonealType::Integer) => PhonealType::Integer,
+                    (UnaryOperator::Not, PhonealType::Boolean) => PhonealType::Boolean,
+                    (UnaryOperator::Negate, PhonealType::Integer) => PhonealType::Integer,
                     _ => {
                         return Err(Self::error(
                             format!("Unary operator cannot be applied to {}", operand.ty),
@@ -481,7 +514,7 @@ impl Lowerer {
                 };
                 (
                     TypedExpressionKind::Unary {
-                        operator: operator.clone(),
+                        operator,
                         operand: Box::new(operand),
                     },
                     ty,
@@ -496,7 +529,10 @@ impl Lowerer {
             } => {
                 let left = self.lower_expression(left)?;
                 let right = self.lower_expression(right)?;
-                let ty = binary_type(operator.clone(), left.ty, right.ty).ok_or_else(|| {
+                let operator = lower_binary_operator(operator).ok_or_else(|| {
+                    Self::error("Unsupported binary operator in AST", Some(operator_location))
+                })?;
+                let ty = binary_type(operator, left.ty, right.ty).ok_or_else(|| {
                     Self::error(
                         format!("Operator cannot be applied to {} and {}", left.ty, right.ty),
                         Some(operator_location),
@@ -505,7 +541,7 @@ impl Lowerer {
                 (
                     TypedExpressionKind::Binary {
                         left: Box::new(left),
-                        operator: operator.clone(),
+                        operator,
                         right: Box::new(right),
                     },
                     ty,
@@ -517,25 +553,39 @@ impl Lowerer {
     }
 }
 
-fn binary_type(operator: TokenKind, left: PhonealType, right: PhonealType) -> Option<PhonealType> {
+fn lower_binary_operator(operator: &TokenKind) -> Option<BinaryOperator> {
+    Some(match operator {
+        TokenKind::Plus => BinaryOperator::Add,
+        TokenKind::Minus => BinaryOperator::Subtract,
+        TokenKind::Star => BinaryOperator::Multiply,
+        TokenKind::Slash => BinaryOperator::Divide,
+        TokenKind::Percent => BinaryOperator::Remainder,
+        TokenKind::Less => BinaryOperator::Less,
+        TokenKind::LessEqual => BinaryOperator::LessEqual,
+        TokenKind::Greater => BinaryOperator::Greater,
+        TokenKind::GreaterEqual => BinaryOperator::GreaterEqual,
+        TokenKind::EqualEqual => BinaryOperator::Equal,
+        TokenKind::BangEqual => BinaryOperator::NotEqual,
+        TokenKind::And => BinaryOperator::And,
+        TokenKind::Or => BinaryOperator::Or,
+        _ => return None,
+    })
+}
+
+fn binary_type(
+    operator: BinaryOperator,
+    left: PhonealType,
+    right: PhonealType,
+) -> Option<PhonealType> {
+    use BinaryOperator::*;
     use PhonealType::{Boolean, Integer, Text};
     match (operator, left, right) {
-        (TokenKind::Plus, Integer, Integer) => Some(Integer),
-        (TokenKind::Plus, Text, Text) => Some(Text),
-        (
-            TokenKind::Minus | TokenKind::Star | TokenKind::Slash | TokenKind::Percent,
-            Integer,
-            Integer,
-        ) => Some(Integer),
-        (
-            TokenKind::Less | TokenKind::LessEqual | TokenKind::Greater | TokenKind::GreaterEqual,
-            Integer,
-            Integer,
-        ) => Some(Boolean),
-        (TokenKind::EqualEqual | TokenKind::BangEqual, left, right) if left == right => {
-            Some(Boolean)
-        }
-        (TokenKind::And | TokenKind::Or, Boolean, Boolean) => Some(Boolean),
+        (Add, Integer, Integer) => Some(Integer),
+        (Add, Text, Text) => Some(Text),
+        (Subtract | Multiply | Divide | Remainder, Integer, Integer) => Some(Integer),
+        (Less | LessEqual | Greater | GreaterEqual, Integer, Integer) => Some(Boolean),
+        (Equal | NotEqual, left, right) if left == right => Some(Boolean),
+        (And | Or, Boolean, Boolean) => Some(Boolean),
         _ => None,
     }
 }
@@ -799,8 +849,8 @@ fn validate_expression(
         TypedExpressionKind::Unary { operator, operand } => {
             validate_expression(operand, signatures, scopes)?;
             let expected = match (operator, operand.ty) {
-                (TokenKind::Not, PhonealType::Boolean) => PhonealType::Boolean,
-                (TokenKind::Minus, PhonealType::Integer) => PhonealType::Integer,
+                (UnaryOperator::Not, PhonealType::Boolean) => PhonealType::Boolean,
+                (UnaryOperator::Negate, PhonealType::Integer) => PhonealType::Integer,
                 _ => return Err(fail("IR unary expression has incompatible operand")),
             };
             if expression.ty != expected {
@@ -815,7 +865,7 @@ fn validate_expression(
         } => {
             validate_expression(left, signatures, scopes)?;
             validate_expression(right, signatures, scopes)?;
-            if binary_type(operator.clone(), left.ty, right.ty) != Some(expression.ty) {
+            if binary_type(*operator, left.ty, right.ty) != Some(expression.ty) {
                 return Err(fail(
                     "IR binary expression has incompatible operand or result types",
                 ));
