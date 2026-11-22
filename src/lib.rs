@@ -43,7 +43,13 @@ pub fn compile_to_ir(source: &str) -> Result<ir::TypedProgram, Vec<Diagnostic>> 
     ir::lower(&statements).map_err(|diagnostic| vec![diagnostic])
 }
 
-/// Compiles source code through typed IR into Phoneal stack bytecode.\npub fn compile_to_bytecode(source: &str) -> Result<bytecode::BytecodeProgram, Diagnostic> {\n    let ir = compile_to_ir(source).map_err(|mut diagnostics| diagnostics.remove(0))?;\n    bytecode::compile(&ir)\n}\n\npub fn run(source: &str) -> Result<Vec<String>, Diagnostic> {
+/// Compiles source code through typed IR into Phoneal stack bytecode.
+pub fn compile_to_bytecode(source: &str) -> Result<bytecode::BytecodeProgram, Diagnostic> {
+    let ir = compile_to_ir(source).map_err(|mut diagnostics| diagnostics.remove(0))?;
+    bytecode::compile(&ir)
+}
+
+pub fn run(source: &str) -> Result<Vec<String>, Diagnostic> {
     let statements = compile(source)?;
     execute(&statements)
 }
