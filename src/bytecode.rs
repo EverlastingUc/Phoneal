@@ -8,10 +8,12 @@ use crate::{
 };
 use std::collections::HashMap;
 
+mod disassemble;
 mod format;
 mod validate;
 mod vm;
 mod verify;
+pub use disassemble::disassemble;
 pub use format::{deserialize, serialize};
 pub use validate::validate_structure;
 pub use verify::verify;
