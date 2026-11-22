@@ -22,3 +22,8 @@ intentionally invalid type-checking example is rejected.
 
 Mutable assignment and while-loop control flow are implemented and demonstrated above. For-each loops remain a design target. See [Syntax.md](../Syntax.md)
 for the authoritative implementation-status list.
+
+
+### Typed IR
+
+`typed_ir.phnl` exercises typed function calls, arithmetic, mutable bindings, and loop control through the current interpreter. The integration tests compile the same language constructs through `compile_to_ir` and validate their typed representation.
