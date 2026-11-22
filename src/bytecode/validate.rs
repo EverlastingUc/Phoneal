@@ -23,6 +23,11 @@ fn validate_function(
     if !is_entry && function.return_type.is_none() {
         return Err(invalid(format!("Bytecode function '{}' has no return type", function.name)));
     }
+    if function.parameter_types.iter().enumerate().any(|(slot, ty)| {
+        function.local_types.get(slot) != Some(ty) || function.local_mutability.get(slot) != Some(&false)
+    }) {
+        return Err(invalid(format!("Bytecode function '{}' has inconsistent parameter slots", function.name)));
+    }
     if is_entry && function.return_type.is_some() {
         return Err(invalid("Bytecode entry must not declare a function return type"));
     }
@@ -34,8 +39,14 @@ fn validate_function(
         return Err(invalid(format!("Bytecode function '{}' must end with unreachable", function.name)));
     }
 
-    for instruction in &function.code {
+    for (index, instruction) in function.code.iter().enumerate() {
         match &instruction.opcode {
+            Opcode::Halt if !is_entry || index + 1 != function.code.len() => {
+                return Err(invalid("Halt is only valid as the final entry instruction"));
+            }
+            Opcode::Unreachable if is_entry || index + 1 != function.code.len() => {
+                return Err(invalid("Unreachable is only valid as the final function instruction"));
+            }
             Opcode::LoadLocal(slot) | Opcode::StoreLocal(slot) if *slot >= function.local_count => {
                 return Err(invalid(format!("Local slot {slot} is outside function '{}' frame", function.name)));
             }
