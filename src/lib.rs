@@ -49,6 +49,12 @@ pub fn compile_to_bytecode(source: &str) -> Result<bytecode::BytecodeProgram, Di
     bytecode::compile(&ir)
 }
 
+/// Compiles source through typed IR and executes the resulting bytecode in the Phoneal VM.
+pub fn run_bytecode(source: &str) -> Result<Vec<String>, Diagnostic> {
+    let bytecode = compile_to_bytecode(source)?;
+    bytecode::execute_bytecode(&bytecode)
+}
+
 pub fn run(source: &str) -> Result<Vec<String>, Diagnostic> {
     let statements = compile(source)?;
     execute(&statements)
