@@ -136,6 +136,14 @@ The listing is a debugging representation, not a source-level decompiler.
 
 This command does not make PHNB files safe for untrusted use; the VM is not a sandbox.
 
+### Phase 20 — CLI Help and Version Flags
+
+**Implementation in progress; CI verification pending.**
+
+- `phnl --help` and `phnl -h` print command usage.
+- `phnl --version` and `phnl -V` print the package version from Cargo metadata.
+- CLI integration tests cover both flags.
+
 ## Latest verified implementation
 
 - Code commit: `7f9bb4514caa03684d49acc56fbcc1d577ba51bc`
