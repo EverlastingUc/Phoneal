@@ -6,6 +6,9 @@ use crate::{
 };
 use std::collections::HashMap;
 
+type TypeScope = HashMap<String, (PhonealType, bool)>;
+type FunctionTable = HashMap<String, (Vec<PhonealType>, PhonealType)>;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TypedProgram {
     pub functions: Vec<TypedFunction>,
@@ -92,8 +95,8 @@ pub enum TypedStatementKind {
 
 #[derive(Default)]
 struct Lowerer {
-    scopes: Vec<HashMap<String, (PhonealType, bool)>>,
-    functions: HashMap<String, (Vec<PhonealType>, PhonealType)>,
+    scopes: Vec<TypeScope>,
+    functions: FunctionTable,
     loop_depth: usize,
     return_types: Vec<PhonealType>,
 }
@@ -609,8 +612,8 @@ pub fn validate(program: &TypedProgram) -> Result<(), Diagnostic> {
 
 fn validate_statements(
     statements: &[TypedStatement],
-    signatures: &HashMap<String, (Vec<PhonealType>, PhonealType)>,
-    scopes: &mut Vec<HashMap<String, (PhonealType, bool)>>,
+    signatures: &FunctionTable,
+    scopes: &mut Vec<TypeScope>,
     return_type: Option<PhonealType>,
     loop_depth: usize,
     function_scope_depth: Option<usize>,
@@ -736,7 +739,7 @@ fn validate_statements(
 fn validate_expression(
     expression: &TypedExpression,
     signatures: &HashMap<String, (Vec<PhonealType>, PhonealType)>,
-    scopes: &[HashMap<String, (PhonealType, bool)>],
+    scopes: &[TypeScope],
 ) -> Result<(), Diagnostic> {
     let fail = |message: &str| Lowerer::error(message, expression.location.as_ref());
     match &expression.kind {
