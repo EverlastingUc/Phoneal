@@ -70,6 +70,7 @@ Phoneal Source
 - Runtime type and mutability checks for local/global stores; functions cannot mutate global bindings.
 - Checked integer arithmetic, text concatenation, comparisons, and short-circuit execution.
 - Runtime diagnostics retain instruction source locations where available.
+- `ResetLocals` reinitializes local slots declared inside a while-body on every iteration, including nested loop/block locals.
 - Limits: 50,000 instructions, 128 active calls, 100,000 operand-stack values, 1 MiB per text value, and 1 MiB captured output.
 - Tests cover arithmetic, recursion, mutable locals/globals, read-only globals in functions, overflow, division by zero, short-circuiting, step limits, and malformed bytecode.
 
