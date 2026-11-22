@@ -157,6 +157,18 @@ This command does not make PHNB files safe for untrusted use; the VM is not a sa
 - Typed verification tracks definite local initialization and permits repeated execution only at declared initialization sites.
 - Tests cover immutable loop locals, nested loops, `continue`, serialization, and disassembly.
 
+### Phase 22 — Security Architecture and Threat Model
+
+**Architecture specification complete; enforcement not implemented.**
+
+- Documented attacker model, assets, trust boundaries, and explicit non-goals.
+- Defined a parent-broker / restricted-worker process architecture.
+- Defined deny-by-default capability classes and resource-scoping requirements.
+- Specified OS-enforced resource controls, bounded IPC, worker launch requirements, and a hostile-input/escape-test release gate.
+- Explicitly kept source compilation inside the worker boundary for untrusted programs.
+
+This phase delivers the design baseline only. It does not add a sandbox, capability enforcement, restricted host APIs, filesystem/network isolation, or OS-enforced resource limits. See [security-architecture.md](docs/security-architecture.md).
+
 ## Latest verified implementation
 
 - Code commit: `34df7606ee7e9c9c46c633cfa379009bfab2c381`
