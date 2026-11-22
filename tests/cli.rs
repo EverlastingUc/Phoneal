@@ -75,3 +75,16 @@ fn cli_rejects_wrong_file_extensions() {
     assert!(!run.status.success());
     assert!(String::from_utf8_lossy(&run.stderr).contains(".phnb"));
 }
+
+#[test]
+fn cli_rejects_source_larger_than_frontend_admission_limit() {
+    let source_path = temp_path("phnl");
+    fs::write(&source_path, vec![b' '; 1024 * 1024 + 1]).unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_phnl"))
+        .args(["check", source_path.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("input limit"));
+    fs::remove_file(source_path).unwrap();
+}
