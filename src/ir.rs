@@ -459,7 +459,7 @@ impl Lowerer {
             } => {
                 let left = self.lower_expression(left)?;
                 let right = self.lower_expression(right)?;
-                let ty = binary_type(*operator, left.ty, right.ty).ok_or_else(|| {
+                let ty = binary_type(operator.clone(), left.ty, right.ty).ok_or_else(|| {
                     Self::error(
                         format!(
                             "Operator cannot be applied to {} and {}",
