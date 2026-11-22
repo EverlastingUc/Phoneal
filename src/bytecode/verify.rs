@@ -90,8 +90,8 @@ fn verify_function(
 
         match opcode {
             Opcode::PushInteger(_) => push_type(&mut state.stack, PhonealType::Integer)?,
-            Opcode::PushText(_) => push_type(&mut stack, PhonealType::Text)?,
-            Opcode::PushBoolean(_) => push_type(&mut stack, PhonealType::Boolean)?,
+            Opcode::PushText(_) => push_type(&mut state.stack, PhonealType::Text)?,
+            Opcode::PushBoolean(_) => push_type(&mut state.stack, PhonealType::Boolean)?,
             Opcode::LoadLocal(slot) => {
                 if !state.initialized_locals[*slot] {
                     return Err(invalid(format!("Read from uninitialized local slot {slot}")));
@@ -102,47 +102,47 @@ fn verify_function(
                 pop_type(&mut state.stack, Some(function.local_types[*slot]))?;
                 state.initialized_locals[*slot] = true;
             }
-            Opcode::LoadGlobal(slot) => push_type(&mut stack, program.global_types[*slot])?,
+            Opcode::LoadGlobal(slot) => push_type(&mut state.stack, program.global_types[*slot])?,
             Opcode::StoreGlobal(slot) => {
                 if !is_entry {
                     return Err(invalid("Function bytecode cannot write global slots"));
                 }
-                pop_type(&mut stack, Some(program.global_types[*slot]))?;
+                pop_type(&mut state.stack, Some(program.global_types[*slot]))?;
             }
             Opcode::Pop | Opcode::Print => {
-                pop_type(&mut stack, None)?;
+                pop_type(&mut state.stack, None)?;
             }
             Opcode::Negate => {
-                pop_type(&mut stack, Some(PhonealType::Integer))?;
-                push_type(&mut stack, PhonealType::Integer)?;
+                pop_type(&mut state.stack, Some(PhonealType::Integer))?;
+                push_type(&mut state.stack, PhonealType::Integer)?;
             }
             Opcode::Not => {
-                pop_type(&mut stack, Some(PhonealType::Boolean))?;
-                push_type(&mut stack, PhonealType::Boolean)?;
+                pop_type(&mut state.stack, Some(PhonealType::Boolean))?;
+                push_type(&mut state.stack, PhonealType::Boolean)?;
             }
             Opcode::AddInteger | Opcode::Subtract | Opcode::Multiply | Opcode::Divide | Opcode::Remainder => {
-                pop_type(&mut stack, Some(PhonealType::Integer))?;
-                pop_type(&mut stack, Some(PhonealType::Integer))?;
-                push_type(&mut stack, PhonealType::Integer)?;
+                pop_type(&mut state.stack, Some(PhonealType::Integer))?;
+                pop_type(&mut state.stack, Some(PhonealType::Integer))?;
+                push_type(&mut state.stack, PhonealType::Integer)?;
             }
             Opcode::AddText => {
-                pop_type(&mut stack, Some(PhonealType::Text))?;
-                pop_type(&mut stack, Some(PhonealType::Text))?;
-                push_type(&mut stack, PhonealType::Text)?;
+                pop_type(&mut state.stack, Some(PhonealType::Text))?;
+                pop_type(&mut state.stack, Some(PhonealType::Text))?;
+                push_type(&mut state.stack, PhonealType::Text)?;
             }
             Opcode::Less | Opcode::LessEqual | Opcode::Greater | Opcode::GreaterEqual => {
-                pop_type(&mut stack, Some(PhonealType::Integer))?;
-                pop_type(&mut stack, Some(PhonealType::Integer))?;
-                push_type(&mut stack, PhonealType::Boolean)?;
+                pop_type(&mut state.stack, Some(PhonealType::Integer))?;
+                pop_type(&mut state.stack, Some(PhonealType::Integer))?;
+                push_type(&mut state.stack, PhonealType::Boolean)?;
             }
             Opcode::Equal | Opcode::NotEqual => {
-                let right = pop_type(&mut stack, None)?;
-                pop_type(&mut stack, Some(right))?;
-                push_type(&mut stack, PhonealType::Boolean)?;
+                let right = pop_type(&mut state.stack, None)?;
+                pop_type(&mut state.stack, Some(right))?;
+                push_type(&mut state.stack, PhonealType::Boolean)?;
             }
             Opcode::Jump(target) => successors.push(*target),
             Opcode::JumpIfFalse(target) => {
-                pop_type(&mut stack, Some(PhonealType::Boolean))?;
+                pop_type(&mut state.stack, Some(PhonealType::Boolean))?;
                 successors.push(ip + 1);
                 successors.push(*target);
             }
@@ -152,17 +152,17 @@ fn verify_function(
                     return Err(invalid("Call argument count does not match the target function signature"));
                 }
                 for expected in callee.parameter_types.iter().rev() {
-                    pop_type(&mut stack, Some(*expected))?;
+                    pop_type(&mut state.stack, Some(*expected))?;
                 }
                 let result = callee.return_type.ok_or_else(|| invalid("Called function has no return type"))?;
-                push_type(&mut stack, result)?;
+                push_type(&mut state.stack, result)?;
             }
             Opcode::Return => {
                 if is_entry {
                     return Err(invalid("Entry bytecode cannot return"));
                 }
                 let expected = function.return_type.ok_or_else(|| invalid("Function has no return type"))?;
-                pop_type(&mut stack, Some(expected))?;
+                pop_type(&mut state.stack, Some(expected))?;
                 if !stack.is_empty() {
                     return Err(invalid("Function return leaves extra values on the operand stack"));
                 }
