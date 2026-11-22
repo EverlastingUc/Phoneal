@@ -19,6 +19,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - name: Format source
+        run: cargo fmt --all
       - id: format
         name: Check formatting
         continue-on-error: true
