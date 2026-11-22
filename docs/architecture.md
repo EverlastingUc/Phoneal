@@ -11,14 +11,15 @@ Phoneal currently uses a Rust-hosted compile-and-interpret pipeline:
         -> Typed IR (typed expressions, declarations, calls, functions, and control flow)
             -> Bytecode Compiler (stack instructions, slots, calls, jumps)
                 -> Bytecode VM (bounded stack machine, typed frames, checked operations)
-                    -> future security verifier and sandbox
+                    -> typed bytecode verifier (stack/control-flow validation)
+                        -> future security hardening and sandbox
 
 Front-end admission limits: 1 MiB source, 100,000 tokens, and 256 nested grammar levels.
 ```
 
 ## Typed IR boundary
 
-`compile_to_ir(source)` runs the same lexer, parser, and semantic checks as the interpreter pipeline, then lowers the validated AST into a compiler-independent representation. `ir::validate` independently checks typed variable references, declarations, assignments, function calls, returns, boolean conditions, and loop-control placement. The IR retains source locations for statements, expressions, literals, operators, and parameters. The interpreter continues to execute the AST. `bytecode::compile(&ir)` and `compile_to_bytecode(source)` lower validated IR into a stack-oriented instruction stream. The compiler emits typed arithmetic operations, local/global slot access, function calls, conditional/loop jumps, and short-circuit branches. Jump targets are absolute instruction offsets within each function. The compiler runs structural checks on its output (jump ranges, slot references, call indices/arity, frame metadata, and terminators). The initial VM executes this bytecode with checked operations, type/mutability checks, a 50,000-instruction budget, 128 active calls, a 100,000-value operand-stack cap, and 1 MiB per-text/output limits. These checks are not a security verifier or sandbox.
+`compile_to_ir(source)` runs the same lexer, parser, and semantic checks as the interpreter pipeline, then lowers the validated AST into a compiler-independent representation. `ir::validate` independently checks typed variable references, declarations, assignments, function calls, returns, boolean conditions, and loop-control placement. The IR retains source locations for statements, expressions, literals, operators, and parameters. The interpreter continues to execute the AST. `bytecode::compile(&ir)` and `compile_to_bytecode(source)` lower validated IR into a stack-oriented instruction stream. The compiler emits typed arithmetic operations, local/global slot access, function calls, conditional/loop jumps, and short-circuit branches. Jump targets are absolute instruction offsets within each function. The compiler runs structural checks on its output (jump ranges, slot references, call indices/arity, frame metadata, and terminators). The initial VM executes this bytecode with checked operations, type/mutability checks, a 50,000-instruction budget, 128 active calls, a 100,000-value operand-stack cap, and 1 MiB per-text/output limits. The typed verifier checks stack types and control-flow stack consistency, but it is not a complete security verifier or sandbox.
 
 ## Current invariants
 
