@@ -7,7 +7,7 @@ The project has two execution paths:
 - `run(source)` uses the original AST interpreter.
 - `run_bytecode(source)` compiles through typed IR and executes the generated stack bytecode in the initial Phoneal VM.
 
-Both paths enforce static types, lexical scope, checked integer arithmetic, bounded function-call depth, and per-run execution limits. The bytecode VM additionally validates instruction structure before execution, checks local/global slot metadata, enforces runtime value types and mutability, rejects global writes from functions, and enforces these limits:
+Both paths enforce static types, lexical scope, checked integer arithmetic, bounded function-call depth, and per-run execution limits. The bytecode VM additionally validates instruction structure and typed operand-stack/control-flow consistency before execution, checks local/global slot metadata, enforces runtime value types and mutability, rejects global writes from functions, and enforces these limits:
 
 - 50,000 executed VM instructions;
 - 128 active function calls;
