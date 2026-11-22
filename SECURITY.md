@@ -17,6 +17,10 @@ Both paths enforce static types, lexical scope, checked integer arithmetic, boun
 
 These are defensive runtime limits, not a security boundary. The VM does not impose an aggregate heap quota or wall-clock deadline. Text/local/global values can be copied, and the current limits do not prove total memory use is bounded.
 
+## Security architecture
+
+The target threat model, process boundary, capability model, resource-enforcement plan, IPC requirements, and sandbox release gate are documented in [docs/security-architecture.md](docs/security-architecture.md). This is an architecture specification only; none of the worker-process or OS-enforced sandbox controls are implemented yet.
+
 ## Missing security controls
 
 Phoneal does not yet have:
