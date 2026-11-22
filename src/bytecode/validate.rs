@@ -50,6 +50,14 @@ fn validate_function(
             Opcode::LoadLocal(slot) | Opcode::StoreLocal(slot) if *slot >= function.local_count => {
                 return Err(invalid(format!("Local slot {slot} is outside function '{}' frame", function.name)));
             }
+            Opcode::ResetLocals { start, count } => {
+                let end = start.checked_add(*count)
+                    .ok_or_else(|| invalid("Local reset range overflows"))?;
+                if *start < function.parameter_count || end > function.local_count {
+                    return Err(invalid("Local reset range is outside the non-parameter local frame"));
+                }
+            }
+
             Opcode::LoadGlobal(slot) | Opcode::StoreGlobal(slot) if *slot >= program.global_count => {
                 return Err(invalid(format!("Global slot {slot} is outside the program global frame")));
             }
