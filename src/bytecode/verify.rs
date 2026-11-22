@@ -258,6 +258,17 @@ mod tests {
     }
 
     #[test]
+    fn merges_local_initialization_across_branches() {
+        let mut program = compile_to_bytecode(
+            "function maybe(flag: boolean) returns integer { create mutable value = 0; if (flag) { set value = 1; } return value; } print(maybe(true));",
+        ).unwrap();
+        let function = &mut program.functions[0];
+        let first_store = function.code.iter().position(|instruction| matches!(&instruction.opcode, Opcode::StoreLocal(1))).unwrap();
+        function.code[first_store].opcode = Opcode::Pop;
+        assert!(verify(&program).unwrap_err().message.contains("uninitialized local"));
+    }
+
+    #[test]
     fn rejects_global_writes_from_functions() {
         let mut program = compile_to_bytecode("create mutable total = 0; function read() returns integer { return total; } print(read());").unwrap();
         let function = &mut program.functions[0];
