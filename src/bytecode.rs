@@ -36,7 +36,6 @@ pub enum Opcode {
     StoreLocal(usize),
     LoadGlobal(usize),
     StoreGlobal(usize),
-    ResetLocals { start: usize, count: usize },
     Pop,
     Print,
     Negate,
@@ -71,6 +70,7 @@ pub struct BytecodeFunction {
     pub local_count: usize,
     pub local_types: Vec<PhonealType>,
     pub local_mutability: Vec<bool>,
+    pub local_declarations: Vec<Option<usize>>,
     pub return_type: Option<PhonealType>,
     pub code: Vec<Instruction>,
 }
@@ -99,6 +99,7 @@ struct FunctionCompiler<'a> {
     local_count: usize,
     local_types: Vec<PhonealType>,
     local_mutability: Vec<bool>,
+    local_declarations: Vec<Option<usize>>,
     loops: Vec<LoopPatch>,
 }
 
@@ -131,6 +132,7 @@ impl<'a> FunctionCompiler<'a> {
             code: Vec::new(),
             local_count: local_types.len(),
             local_mutability: vec![false; local_types.len()],
+            local_declarations: vec![None; local_types.len()],
             local_types,
             loops: Vec::new(),
         }
@@ -157,6 +159,7 @@ impl<'a> FunctionCompiler<'a> {
         self.local_count += 1;
         self.local_types.push(ty);
         self.local_mutability.push(mutable);
+        self.local_declarations.push(None);
         self.scopes.last_mut().expect("scope exists").insert(name.to_owned(), Storage::Local(slot));
         Storage::Local(slot)
     }
@@ -192,6 +195,9 @@ impl<'a> FunctionCompiler<'a> {
             TypedStatementKind::Let { name, mutable, ty, value } => {
                 self.compile_expression(value)?;
                 let storage = self.declare(name, top_level && self.scopes.len() == 2, *ty, *mutable);
+                if let Storage::Local(slot) = storage {
+                    self.local_declarations[slot] = Some(self.code.len());
+                }
                 self.store(storage, location);
             }
             TypedStatementKind::Assign { name, value } => {
@@ -233,14 +239,10 @@ impl<'a> FunctionCompiler<'a> {
                 let condition_start = self.code.len();
                 self.compile_expression(condition)?;
                 let exit_jump = self.emit(Opcode::JumpIfFalse(usize::MAX), location);
-                let local_start = self.local_count;
-                let reset_instruction = self.emit(Opcode::ResetLocals { start: local_start, count: 0 }, location);
                 self.loops.push(LoopPatch { continue_target: condition_start, breaks: Vec::new() });
                 self.scopes.push(HashMap::new());
                 self.compile_statements(body, false)?;
                 self.scopes.pop();
-                let local_count = self.local_count - local_start;
-                self.code[reset_instruction].opcode = Opcode::ResetLocals { start: local_start, count: local_count };
                 self.emit(Opcode::Jump(condition_start), location);
                 let exit = self.code.len();
                 self.patch_jump(exit_jump, exit);
@@ -368,6 +370,7 @@ pub fn compile(program: &TypedProgram) -> Result<BytecodeProgram, Diagnostic> {
             local_count: entry.local_count,
             local_types: entry.local_types,
             local_mutability: entry.local_mutability,
+            local_declarations: entry.local_declarations,
             parameter_types: Vec::new(),
             return_type: None,
             code: entry.code,
@@ -398,6 +401,7 @@ fn compile_function(
         local_count: compiler.local_count,
         local_types: compiler.local_types,
         local_mutability: compiler.local_mutability,
+        local_declarations: compiler.local_declarations,
         return_type: Some(function.return_type),
         code: compiler.code,
     })
