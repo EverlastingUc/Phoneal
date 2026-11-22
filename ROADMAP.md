@@ -77,7 +77,7 @@ The VM is an execution engine, not a sandbox. It uses a typed bytecode verifier 
 
 ### Phase 15 — Typed Bytecode Verification
 
-**Implemented; CI verification pending.**
+**Complete and CI-verified.**
 
 - Independent data-flow analysis for every function and the entry instruction stream.
 - Operand-stack type tracking for constants, local/global loads and stores, arithmetic, comparisons, equality, conditions, calls, returns, and output.
@@ -91,9 +91,9 @@ This is a typed correctness verifier, not a complete security boundary. It does 
 
 ## Latest verified implementation
 
-- Code commit: `0c988c438816f1267f281533a94f4de33749e705`
-- CI: [Phoneal CI #45058139894](https://github.com/EverlastingUc/Phoneal/actions/runs/45058139894)
-- Tests: **127 passed, 0 failed** (78 unit, 42 compiler-pipeline, 4 bytecode compiler, 3 typed IR)
+- Code commit: `a70315ff0544707a606a5140d77efdae54e3a025`
+- CI: [Phoneal CI #45058586703](https://github.com/EverlastingUc/Phoneal/actions/runs/45058586703)
+- Tests: **133 passed, 0 failed** (83 unit, 42 compiler-pipeline, 5 bytecode integration, 3 typed IR)
 - Checks: formatting, Clippy, build, executable examples, and tests all passed.
 
 ## Explicit exclusions
