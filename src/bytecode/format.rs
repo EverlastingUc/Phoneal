@@ -419,6 +419,26 @@ mod tests {
     }
 
     #[test]
+    fn decoder_handles_truncated_and_arbitrary_bounded_inputs_without_panicking() {
+        let valid = serialize(&compile_to_bytecode("print(42);").unwrap()).unwrap();
+        for end in 0..valid.len() {
+            assert!(deserialize(&valid[..end]).is_err());
+        }
+
+        let mut seed = 0xA5A5_1234_u32;
+        for length in 0..256 {
+            let mut bytes = Vec::with_capacity(length);
+            for _ in 0..length {
+                seed ^= seed << 13;
+                seed ^= seed >> 17;
+                seed ^= seed << 5;
+                bytes.push(seed as u8);
+            }
+            let _ = deserialize(&bytes);
+        }
+    }
+
+    #[test]
     fn rejects_bad_magic_version_and_checksum() {
         let program = compile_to_bytecode("print(42);").unwrap();
         let bytes = serialize(&program).unwrap();
