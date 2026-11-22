@@ -40,6 +40,9 @@ print(factorial(5));
 
 ## Run
 
+    cargo run -- --help
+    cargo run -- --version
+
     cargo run -- run examples/hello.phnl
     cargo run -- run examples/conditions.phnl
     cargo run -- run examples/factorial.phnl
