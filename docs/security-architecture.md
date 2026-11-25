@@ -1,6 +1,6 @@
 # Phoneal Security Architecture
 
-**Status:** Threat model, capability policy primitives, bounded IPC framing, and typed IPC payload schemas are implemented. No transport, request sequencer, worker process, or broker is implemented yet.
+**Status:** Threat model, capability policy primitives, bounded IPC framing, typed payload schemas, and per-session sequencing primitives are implemented. No transport, peer authentication, worker process, or broker is implemented yet.
 
 This document defines the boundary required before Phoneal can be described as safe for untrusted programs. The current AST interpreter and bytecode VM are experimental in-process execution engines. Runtime checks and bytecode verification are defense-in-depth, not a security boundary.
 
@@ -169,7 +169,7 @@ Payload contracts:
 
 Unknown message kinds and capability identifiers, invalid version ranges, invalid UTF-8, incorrect fixed payload lengths, invalid boolean encodings, and empty execution/error messages are rejected.
 
-This remains a framing and payload-schema library only. There is no pipe/socket transport, request sequencing, replay protection, message authorization, broker, or worker process. A valid frame is not proof that a message is authorized or valid in the current session state.
+This remains a protocol library only. `Session` requires a request-zero Hello handshake, enforces endpoint message direction, permits one active request, matches responses to that request, and rejects non-monotonic request IDs within the session. It does not provide transport, peer authentication, capability authorization, or replay protection across newly created sessions. A valid frame or session transition is not proof that a message is authorized.
 
 ## 8. Required security test matrix
 

@@ -200,7 +200,21 @@ This is a framing library only. It does not create IPC transports, validate mess
 - Added strict payload validation for version ranges, UTF-8 source/error text, fixed-width fields, known capability identifiers, boolean encodings, and empty control messages.
 - Added typed frame encode/decode helpers while retaining raw frame access for lower-level transport tests.
 
-This phase defines message shape only. It does not add request sequencing, replay protection, authorization, transport, or a worker process.
+This phase defines message shape only. Request sequencing is tracked separately in Phase 26.
+
+### Phase 26 — IPC Session Sequencing
+
+**Implementation in progress; CI verification pending.**
+
+- Added parent and worker endpoint roles.
+- Requires a request-zero protocol handshake before other messages.
+- Enforces message direction for each endpoint.
+- Tracks one active request per session.
+- Requires strictly increasing, non-zero request IDs and rejects replayed or out-of-order requests within a session.
+- Matches worker output, capability requests, completion, errors, cancellation, and capability responses to the active request.
+- Keeps cancellation separate from completion; the worker must explicitly finish the request after handling cancellation.
+
+This is a state-validation API only. It does not write to a transport, authenticate peers, authorize capability requests, or protect against replay across newly created sessions.
 
 ## Latest verified implementation
 

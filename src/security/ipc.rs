@@ -301,6 +301,144 @@ impl Frame {
     }
 }
 
+
+/// The peer expected on the other end of an IPC session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EndpointRole {
+    Parent,
+    Worker,
+}
+
+/// Stateful protocol validation for one endpoint.
+///
+/// The caller must invoke `begin_request` before sending a request from the
+/// parent and `complete_request` after the worker sends a terminal response.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Session {
+    role: EndpointRole,
+    handshaken: bool,
+    active_request: Option<u64>,
+    last_request_id: u64,
+}
+
+impl Session {
+    pub const fn new(role: EndpointRole) -> Self {
+        Self {
+            role,
+            handshaken: false,
+            active_request: None,
+            last_request_id: 0,
+        }
+    }
+
+    pub const fn is_handshaken(&self) -> bool {
+        self.handshaken
+    }
+
+    pub const fn active_request_id(&self) -> Option<u64> {
+        self.active_request
+    }
+
+    /// Records a parent request before its frame is written to the transport.
+    pub fn begin_request(&mut self, request_id: u64) -> Result<(), ProtocolError> {
+        if self.role != EndpointRole::Parent {
+            return Err(ProtocolError::new("Only the parent may begin a request"));
+        }
+        if !self.handshaken {
+            return Err(ProtocolError::new("IPC handshake is incomplete"));
+        }
+        if self.active_request.is_some() {
+            return Err(ProtocolError::new("An IPC request is already active"));
+        }
+        if request_id == 0 || request_id <= self.last_request_id {
+            return Err(ProtocolError::new("IPC request ID must increase monotonically"));
+        }
+        self.last_request_id = request_id;
+        self.active_request = Some(request_id);
+        Ok(())
+    }
+
+    /// Validates the next peer frame against handshake and request state.
+    pub fn accept(&mut self, frame: &Frame) -> Result<Message, ProtocolError> {
+        let message = frame.message()?;
+        if !self.handshaken {
+            if message.kind() != MessageKind::Hello || frame.request_id != 0 {
+                return Err(ProtocolError::new("IPC peer must begin with a request-zero Hello"));
+            }
+            self.handshaken = true;
+            return Ok(message);
+        }
+        if message.kind() == MessageKind::Hello {
+            return Err(ProtocolError::new("Duplicate IPC Hello message"));
+        }
+
+        match self.role {
+            EndpointRole::Parent => self.accept_worker_message(frame, message),
+            EndpointRole::Worker => self.accept_parent_message(frame, message),
+        }
+    }
+
+    /// Marks a worker request complete after its terminal frame has been sent.
+    pub fn complete_request(&mut self, request_id: u64) -> Result<(), ProtocolError> {
+        if self.role != EndpointRole::Worker {
+            return Err(ProtocolError::new("Only the worker completes an IPC request"));
+        }
+        self.require_active_request(request_id)?;
+        self.active_request = None;
+        Ok(())
+    }
+
+    fn accept_worker_message(
+        &mut self,
+        frame: &Frame,
+        message: Message,
+    ) -> Result<Message, ProtocolError> {
+        self.require_active_request(frame.request_id)?;
+        if !matches!(
+            message,
+            Message::Stdout(_) | Message::Stderr(_) | Message::CapabilityRequest { .. }
+                | Message::Completed | Message::Error { .. }
+        ) {
+            return Err(ProtocolError::new("Unexpected worker-to-parent IPC message"));
+        }
+        if matches!(message, Message::Completed | Message::Error { .. }) {
+            self.active_request = None;
+        }
+        Ok(message)
+    }
+
+    fn accept_parent_message(
+        &mut self,
+        frame: &Frame,
+        message: Message,
+    ) -> Result<Message, ProtocolError> {
+        match message {
+            Message::RunSource(_) | Message::RunBytecode(_) => {
+                if self.active_request.is_some() {
+                    return Err(ProtocolError::new("Worker already has an active IPC request"));
+                }
+                if frame.request_id == 0 || frame.request_id <= self.last_request_id {
+                    return Err(ProtocolError::new("IPC request ID must increase monotonically"));
+                }
+                self.last_request_id = frame.request_id;
+                self.active_request = Some(frame.request_id);
+            }
+            Message::CapabilityResponse { .. } | Message::Cancel => {
+                self.require_active_request(frame.request_id)?;
+            }
+            _ => return Err(ProtocolError::new("Unexpected parent-to-worker IPC message")),
+        }
+        Ok(message)
+    }
+
+    fn require_active_request(&self, request_id: u64) -> Result<(), ProtocolError> {
+        if request_id == 0 || self.active_request != Some(request_id) {
+            return Err(ProtocolError::new("IPC message has no matching active request"));
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtocolError {
     pub message: String,
@@ -429,6 +567,88 @@ mod tests {
         trailing.push(0);
         assert!(Frame::decode(&trailing).unwrap_err().message.contains("length"));
         assert!(Frame::new(MessageKind::Hello, 1, vec![0; MAX_PAYLOAD_BYTES + 1]).is_err());
+    }
+
+
+    #[test]
+    fn parent_session_requires_handshake_and_monotonic_requests() {
+        let hello = Frame::from_message(
+            0,
+            &Message::Hello { minimum_version: 1, maximum_version: 1 },
+        ).unwrap();
+        let mut session = Session::new(EndpointRole::Parent);
+        assert!(session.begin_request(1).is_err());
+        assert_eq!(session.accept(&hello).unwrap().kind(), MessageKind::Hello);
+        assert!(session.begin_request(1).is_ok());
+        assert!(session.begin_request(2).is_err());
+
+        let completed = Frame::from_message(1, &Message::Completed).unwrap();
+        assert_eq!(session.accept(&completed).unwrap(), Message::Completed);
+        assert!(session.begin_request(1).is_err());
+        assert!(session.begin_request(2).is_ok());
+    }
+
+    #[test]
+    fn parent_session_rejects_unmatched_and_out_of_order_worker_frames() {
+        let mut session = Session::new(EndpointRole::Parent);
+        let hello = Frame::from_message(0, &Message::Hello {
+            minimum_version: 1,
+            maximum_version: 1,
+        }).unwrap();
+        session.accept(&hello).unwrap();
+
+        let unsolicited = Frame::from_message(4, &Message::Stdout(b"x".to_vec())).unwrap();
+        assert!(session.accept(&unsolicited).is_err());
+        session.begin_request(5).unwrap();
+        let wrong_id = Frame::from_message(4, &Message::Completed).unwrap();
+        assert!(session.accept(&wrong_id).is_err());
+        let duplicate_hello = Frame::from_message(0, &Message::Hello {
+            minimum_version: 1,
+            maximum_version: 1,
+        }).unwrap();
+        assert!(session.accept(&duplicate_hello).is_err());
+    }
+
+    #[test]
+    fn worker_session_tracks_requests_and_rejects_replay() {
+        let mut session = Session::new(EndpointRole::Worker);
+        let hello = Frame::from_message(0, &Message::Hello {
+            minimum_version: 1,
+            maximum_version: 1,
+        }).unwrap();
+        session.accept(&hello).unwrap();
+
+        let run = Frame::from_message(7, &Message::RunSource("print(1);".to_owned())).unwrap();
+        assert_eq!(session.accept(&run).unwrap(), Message::RunSource("print(1);".to_owned()));
+        let cancel = Frame::from_message(7, &Message::Cancel).unwrap();
+        assert_eq!(session.accept(&cancel).unwrap(), Message::Cancel);
+        session.complete_request(7).unwrap();
+        assert!(session.accept(&run).is_err());
+
+        let next = Frame::from_message(8, &Message::RunBytecode(vec![1, 2, 3])).unwrap();
+        assert_eq!(session.accept(&next).unwrap(), Message::RunBytecode(vec![1, 2, 3]));
+        let wrong_response = Frame::from_message(7, &Message::CapabilityResponse { granted: true }).unwrap();
+        assert!(session.accept(&wrong_response).is_err());
+    }
+
+    #[test]
+    fn sessions_reject_wrong_direction_and_handshake_order() {
+        let mut worker = Session::new(EndpointRole::Worker);
+        let run_before_hello = Frame::from_message(1, &Message::RunSource("x".to_owned())).unwrap();
+        assert!(worker.accept(&run_before_hello).is_err());
+
+        let hello = Frame::from_message(0, &Message::Hello {
+            minimum_version: 1,
+            maximum_version: 1,
+        }).unwrap();
+        worker.accept(&hello).unwrap();
+        let output = Frame::from_message(1, &Message::Stdout(vec![])).unwrap();
+        assert!(worker.accept(&output).is_err());
+
+        let mut parent = Session::new(EndpointRole::Parent);
+        parent.accept(&hello).unwrap();
+        let capability_response = Frame::from_message(1, &Message::CapabilityResponse { granted: false }).unwrap();
+        assert!(parent.accept(&capability_response).is_err());
     }
 
     #[test]
