@@ -193,7 +193,7 @@ This is a framing library only. It does not create IPC transports, validate mess
 
 ### Phase 25 — Typed IPC Payload Schemas
 
-**Implementation in progress; CI verification pending.**
+**Complete and CI-verified.**
 
 - Added typed `Message` variants for every PHIP v1 message kind.
 - Added explicit `CapabilityId` wire identifiers.
@@ -204,10 +204,9 @@ This phase defines message shape only. It does not add request sequencing, repla
 
 ## Latest verified implementation
 
-- Code commit: `34df7606ee7e9c9c46c633cfa379009bfab2c381`
-- Latest documentation-only commit before Phase 25: `3a6bf03f27dc71f658282a5b19a15bb36a7d0596`
-- CI: [Phoneal CI #45061642570](https://github.com/EverlastingUc/Phoneal/actions/runs/45061642570)
-- Tests at last verified implementation: **154 passed, 0 failed** (97 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
+- Code commit: `f23da5446e6f0e8732fff9d6a59c5d7a81d1ccd4`
+- CI: [Phoneal CI #45607797684](https://github.com/EverlastingUc/Phoneal/actions/runs/45607797684)
+- Tests: **158 passed, 0 failed** (101 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
 
 ## Explicit exclusions
 
