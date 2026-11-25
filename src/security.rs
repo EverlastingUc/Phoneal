@@ -1,10 +1,11 @@
 //! Deny-by-default capability policy primitives.
 
-pub mod ipc;
 //!
 //! These types model grants for an embedding host. They do not perform host I/O,
 //! create OS capabilities, or isolate the VM. Enforcement requires the future
 //! parent-process broker and restricted worker described in the security architecture.
+
+pub mod ipc;
 
 use std::{
     collections::BTreeSet,
