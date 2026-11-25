@@ -1,6 +1,6 @@
 # Phoneal Security Architecture
 
-**Status:** Threat model, capability policy primitives, and bounded IPC frame primitives are implemented. No worker process, broker, or OS sandbox is implemented yet.
+**Status:** Threat model, capability policy primitives, bounded IPC framing, and typed IPC payload schemas are implemented. No transport, request sequencer, worker process, or broker is implemented yet.
 
 This document defines the boundary required before Phoneal can be described as safe for untrusted programs. The current AST interpreter and bytecode VM are experimental in-process execution engines. Runtime checks and bytecode verification are defense-in-depth, not a security boundary.
 
@@ -108,7 +108,7 @@ Network access must resolve and validate destinations at connection time, not me
 
 ### Current policy API
 
-The Rust API exposes `phoneal::security::Capability`, `CapabilityPolicy`, and `CapabilityDenied`. `CapabilityPolicy::default()` denies every capability; grants are explicit and revocable. This is a policy data structure only. No VM opcode, standard-library function, host interface, or broker currently consumes it, and it must not be mistaken for OS-enforced authority.
+The Rust API exposes `phoneal::security::Capability`, `CapabilityPolicy`, and `CapabilityDenied`. `CapabilityPolicy::default()` denies every capability; grants are explicit and revocable. This is a policy data structure only. No VM opcode, standard-library function, host interface, or broker currently consumes these grants, and it must not be mistaken for OS-enforced authority.
 
 ## 5. Resource enforcement
 
@@ -148,22 +148,28 @@ Before the sandbox can be called functional, the launcher must:
 
 Platform-specific enforcement must be implemented and tested independently. A portable interface must not silently fall back to an unrestricted process when a platform adapter is unavailable.
 
-## 7. IPC protocol requirements
+## 7. IPC protocol
 
-The Rust API exposes `phoneal::security::ipc::{Frame, MessageKind}`. Version 1 frames use the `PHIP` magic, fixed-width little-endian header, request ID, payload length, CRC-32, and a 1 MiB payload cap. Encode/decode tests cover all message kinds and malformed headers.
+PHIP version 1 uses the `PHIP` magic, a fixed-width little-endian header, request ID, payload length, CRC-32, and a 1 MiB payload cap. CRC-32 detects accidental corruption; it is not authentication.
 
-This is a framing layer only: no pipe/socket transport, message-specific payload schema, request sequencing, broker, or worker process is implemented.
+The API exposes typed `Message` payloads and `CapabilityId` identifiers. `Frame::from_message` encodes a typed message, `Frame::message` validates a frame's payload against its message kind, and `Frame::decode_message` performs both framing and payload validation.
 
-The worker protocol must be versioned and length-prefixed. Every frame must have:
+Payload contracts:
 
-- a fixed magic and protocol version;
-- a bounded frame length checked before allocation;
-- a message type and request identifier;
-- a strictly validated payload schema;
-- explicit success/error responses;
-- no implicit filesystem paths or arbitrary command strings.
+| Message | Payload |
+| --- | --- |
+| Hello | Minimum and maximum supported protocol versions (two little-endian u16 values); the range must include version 1 |
+| RunSource | Non-empty UTF-8 source text |
+| RunBytecode | Non-empty bytecode bytes |
+| Stdout / Stderr | Opaque output bytes |
+| CapabilityRequest | Exactly one known capability identifier |
+| CapabilityResponse | Exactly one byte: 0 (denied) or 1 (granted) |
+| Completed / Cancel | Empty payload |
+| Error | Little-endian u16 error code followed by non-empty UTF-8 text |
 
-Unknown message types, invalid lengths, duplicate or out-of-order request IDs, malformed UTF-8, oversized responses, and unexpected EOF must fail closed. The broker must not interpret a worker-provided path or hostname as authorization.
+Unknown message kinds and capability identifiers, invalid version ranges, invalid UTF-8, incorrect fixed payload lengths, invalid boolean encodings, and empty execution/error messages are rejected.
+
+This remains a framing and payload-schema library only. There is no pipe/socket transport, request sequencing, replay protection, message authorization, broker, or worker process. A valid frame is not proof that a message is authorized or valid in the current session state.
 
 ## 8. Required security test matrix
 
@@ -187,15 +193,16 @@ A passing unit-test suite is necessary but not sufficient. Security review and h
 ## 9. Implementation sequence
 
 1. Finalize capability names, scopes, and policy semantics.
-2. Define and test the bounded IPC protocol.
-3. Build a parent/worker process split with no host capabilities.
-4. Add the first supported OS sandbox adapter and fail-closed platform detection.
-5. Add OS memory, CPU, process, descriptor, and parent wall-clock limits.
-6. Add read-only workspace access through the broker.
-7. Add scoped file writes only after path-race tests pass.
-8. Add optional network access only after destination policy and DNS tests pass.
-9. Fuzz the decoder, verifier, VM, and IPC parser.
-10. Run the escape-test matrix and obtain independent security review.
+2. Define and test bounded IPC framing and typed payload schemas.
+3. Add request sequencing and replay/out-of-order rejection.
+4. Build a parent/worker process split with no host capabilities.
+5. Add the first supported OS sandbox adapter and fail-closed platform detection.
+6. Add OS memory, CPU, process, descriptor, and parent wall-clock limits.
+7. Add read-only workspace access through the broker.
+8. Add scoped file writes only after path-race tests pass.
+9. Add optional network access only after destination policy and DNS tests pass.
+10. Fuzz the decoder, verifier, VM, and IPC parser.
+11. Run the escape-test matrix and obtain independent security review.
 
 ## 10. Current security statement
 

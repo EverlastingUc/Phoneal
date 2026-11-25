@@ -182,7 +182,7 @@ This is a policy model only. No VM operation, host API, IPC broker, or OS permis
 
 ### Phase 24 — Bounded IPC Frame Protocol
 
-**Implemented and CI-verified.**
+**Complete and CI-verified.**
 
 - Added PHIP protocol version 1 with fixed magic, version, message kind, reserved flags, request ID, payload length, and CRC-32.
 - Added a 1 MiB maximum payload and strict length, magic, version, flags, kind, and checksum validation.
@@ -191,12 +191,23 @@ This is a policy model only. No VM operation, host API, IPC broker, or OS permis
 
 This is a framing library only. It does not create IPC transports, validate message-specific payload schemas, authorize requests, or spawn a worker.
 
+### Phase 25 — Typed IPC Payload Schemas
+
+**Implementation in progress; CI verification pending.**
+
+- Added typed `Message` variants for every PHIP v1 message kind.
+- Added explicit `CapabilityId` wire identifiers.
+- Added strict payload validation for version ranges, UTF-8 source/error text, fixed-width fields, known capability identifiers, boolean encodings, and empty control messages.
+- Added typed frame encode/decode helpers while retaining raw frame access for lower-level transport tests.
+
+This phase defines message shape only. It does not add request sequencing, replay protection, authorization, transport, or a worker process.
+
 ## Latest verified implementation
 
 - Code commit: `34df7606ee7e9c9c46c633cfa379009bfab2c381`
-- CI: [Phoneal CI #45060434966](https://github.com/EverlastingUc/Phoneal/actions/runs/45060434966)
-- Tests: **154 passed, 0 failed** (97 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
-- Checks: formatting, Clippy, build, executable examples, and tests all passed.
+- Latest documentation-only commit before Phase 25: `3a6bf03f27dc71f658282a5b19a15bb36a7d0596`
+- CI: [Phoneal CI #45061642570](https://github.com/EverlastingUc/Phoneal/actions/runs/45061642570)
+- Tests at last verified implementation: **154 passed, 0 failed** (97 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
 
 ## Explicit exclusions
 
