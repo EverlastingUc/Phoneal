@@ -1,4 +1,4 @@
-use std::{env, fs, io::Read, process, fs::File};
+use std::{env, fs, io::{Read, stdin, stdout}, process, fs::File};
 
 const MAX_SOURCE_BYTES: usize = 1024 * 1024;
 const MAX_BYTECODE_BYTES: usize = 16 * 1024 * 1024;
@@ -7,6 +7,7 @@ fn print_usage() {
     eprintln!("Phoneal {} — Rust-hosted language prototype", env!("CARGO_PKG_VERSION"));
     eprintln!("Usage:");
     eprintln!("  phnl run <file.phnl>");
+    eprintln!("  phnl run-isolated <file.phnl>");
     eprintln!("  phnl run-bytecode <file.phnl>");
     eprintln!("  phnl check <file.phnl>");
     eprintln!("  phnl build <file.phnl> --output <file.phnb>");
@@ -112,6 +113,17 @@ fn inspect_bytecode(path: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn run_isolated(path: &str) -> Result<(), String> {
+    let source = read_source(path)?;
+    let lines = phoneal::worker::run_isolated_source(&source)?;
+    for line in lines { println!("{line}"); }
+    Ok(())
+}
+
+fn serve_worker() -> Result<(), String> {
+    phoneal::worker::serve_worker(&mut stdin().lock(), &mut stdout().lock())
+}
+
 fn main() {
     let arguments: Vec<String> = env::args().collect();
     let result = match arguments.as_slice() {
@@ -124,6 +136,8 @@ fn main() {
             Ok(())
         }
         [_, command, source] if command == "run" => run_source(source, false),
+        [_, command, source] if command == "run-isolated" => run_isolated(source),
+        [_, command] if command == "__worker" => serve_worker(),
         [_, command, source] if command == "run-bytecode" => run_source(source, true),
         [_, command, source] if command == "check" => check_source(source),
         [_, command, source, flag, output] if command == "build" && flag == "--output" => {

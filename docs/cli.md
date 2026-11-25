@@ -5,6 +5,7 @@ The Rust CLI exposes `--help` / `-h` and `--version` / `-V` flags, plus these co
 | Command | Behavior |
 | --- | --- |
 | `phnl run <file.phnl>` | Execute source with the AST interpreter |
+| `phnl run-isolated <file.phnl>` | Send source over bounded PHIP streams to a separate worker process; compile and execute there |
 | `phnl run-bytecode <file.phnl>` | Compile source and execute it in the bytecode VM |
 | `phnl check <file.phnl>` | Run lexer, parser, and semantic validation |
 | `phnl build <file.phnl> --output <file.phnb>` | Compile, verify, and serialize PHNB bytecode |
@@ -16,6 +17,7 @@ The Rust CLI exposes `--help` / `-h` and `--version` / `-V` flags, plus these co
 ```sh
 phnl check examples/factorial.phnl
 phnl run examples/factorial.phnl
+phnl run-isolated examples/factorial.phnl
 phnl run-bytecode examples/factorial.phnl
 phnl build examples/factorial.phnl --output factorial.phnb
 phnl inspect factorial.phnb
@@ -28,4 +30,4 @@ The CLI reads at most 1 MiB of source text and 16 MiB of PHNB bytecode. Oversize
 
 ## Execution distinction
 
-`run` uses the original AST interpreter. `run-bytecode` uses the compiler and initial VM. Both are experimental and are not security sandboxes. The CLI does not implement policy files, capability grants, or host-resource isolation. A `--policy` argument is a future design target only.
+`run` uses the original AST interpreter. `run-bytecode` uses the compiler and initial VM. Both are experimental and are not security sandboxes. `run-isolated` uses a separate child process and bounded stdin/stdout IPC, but does not apply OS sandboxing, a wall-clock deadline, memory quotas, capability enforcement, or filesystem/network isolation. The CLI does not implement policy files or capability grants. A `--policy` argument is a future design target only.

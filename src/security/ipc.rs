@@ -1,7 +1,7 @@
 //! Bounded, versioned IPC frames and typed message payloads.
 //!
-//! This module validates framing and payload shape only. It does not create a
-//! transport, authorize capabilities, sequence requests, or isolate a process.
+//! This module validates bounded frames and session state. Stream transport is
+//! deliberately small and does not itself authorize capabilities or isolate a process.
 
 use std::{error::Error, fmt};
 
@@ -439,6 +439,44 @@ impl Session {
     }
 }
 
+
+pub fn read_frame<R: std::io::Read>(reader: &mut R) -> Result<Option<Frame>, ProtocolError> {
+    use std::io::Read;
+    let mut header = [0_u8; HEADER_LENGTH];
+    loop {
+        match reader.read(&mut header[..1]) {
+            Ok(0) => return Ok(None),
+            Ok(1) => break,
+            Ok(_) => unreachable!("one-byte read buffer"),
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(error) => return Err(ProtocolError::new(format!("Cannot read IPC header: {error}"))),
+        }
+    }
+    reader.read_exact(&mut header[1..])
+        .map_err(|error| ProtocolError::new(format!("Truncated IPC frame header: {error}")))?;
+    if &header[..4] != MAGIC {
+        return Err(ProtocolError::new("Invalid IPC frame magic"));
+    }
+    let payload_length = u32::from_le_bytes(header[16..20].try_into().expect("header length checked")) as usize;
+    if payload_length > MAX_PAYLOAD_BYTES {
+        return Err(ProtocolError::new("IPC frame exceeds the size limit"));
+    }
+    let mut bytes = Vec::with_capacity(HEADER_LENGTH + payload_length);
+    bytes.extend_from_slice(&header);
+    bytes.resize(HEADER_LENGTH + payload_length, 0);
+    reader.read_exact(&mut bytes[HEADER_LENGTH..])
+        .map_err(|error| ProtocolError::new(format!("Truncated IPC frame payload: {error}")))?;
+    Frame::decode(&bytes).map(Some)
+}
+
+pub fn write_frame<W: std::io::Write>(writer: &mut W, frame: &Frame) -> Result<(), ProtocolError> {
+    use std::io::Write;
+    let bytes = frame.encode()?;
+    writer.write_all(&bytes)
+        .and_then(|()| writer.flush())
+        .map_err(|error| ProtocolError::new(format!("Cannot write IPC frame: {error}")))
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtocolError {
     pub message: String,
@@ -473,6 +511,40 @@ fn crc32(bytes: &[u8]) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
+    #[test]
+    fn stream_transport_round_trips_consecutive_frames() {
+        let first = Frame::from_message(0, &Message::Hello { minimum_version: 1, maximum_version: 1 }).unwrap();
+        let second = Frame::from_message(1, &Message::RunSource("print(1);".to_owned())).unwrap();
+        let mut stream = Vec::new();
+        write_frame(&mut stream, &first).unwrap();
+        write_frame(&mut stream, &second).unwrap();
+        let mut input = stream.as_slice();
+        assert_eq!(read_frame(&mut input).unwrap(), Some(first));
+        assert_eq!(read_frame(&mut input).unwrap(), Some(second));
+        assert_eq!(read_frame(&mut input).unwrap(), None);
+    }
+
+    #[test]
+    fn stream_transport_rejects_truncated_header_and_payload() {
+        let mut short_header = b"PHIP".to_vec();
+        assert!(read_frame(&mut short_header.as_slice()).is_err());
+        let frame = Frame::from_message(1, &Message::RunSource("x".to_owned())).unwrap();
+        let mut encoded = frame.encode().unwrap();
+        encoded.pop();
+        assert!(read_frame(&mut encoded.as_slice()).is_err());
+    }
+
+    #[test]
+    fn stream_transport_rejects_oversized_declared_payload_before_allocation() {
+        let mut header = [0_u8; HEADER_LENGTH];
+        header[..4].copy_from_slice(MAGIC);
+        header[4..6].copy_from_slice(&PROTOCOL_VERSION.to_le_bytes());
+        header[6] = MessageKind::Completed as u8;
+        header[16..20].copy_from_slice(&((MAX_PAYLOAD_BYTES as u32) + 1).to_le_bytes());
+        assert!(read_frame(&mut header.as_slice()).is_err());
+    }
 
     #[test]
     fn typed_messages_round_trip_through_frames() {

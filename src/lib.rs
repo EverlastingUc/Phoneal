@@ -9,6 +9,7 @@ pub mod parser;
 pub mod semantic;
 pub mod token;
 pub mod types;
+pub mod worker;
 
 use ast::Statement;
 use diagnostic::Diagnostic;

@@ -18,6 +18,41 @@ fn temp_path(extension: &str) -> PathBuf {
     ))
 }
 
+
+#[test]
+fn cli_runs_source_in_a_separate_worker_process() {
+    let source_path = temp_path("phnl");
+    fs::write(&source_path, "function double(value: integer) returns integer { return value * 2; } print(double(21));").unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_phnl"))
+        .args(["run-isolated", source_path.to_str().unwrap()]).output().unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), "42");
+    fs::remove_file(source_path).unwrap();
+}
+
+#[test]
+fn worker_rejects_a_missing_handshake() {
+    let output = Command::new(env!("CARGO_BIN_EXE_phnl"))
+        .arg("__worker")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output().unwrap();
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+}
+
+#[test]
+fn isolated_worker_reports_language_errors_without_success_exit() {
+    let source_path = temp_path("phnl");
+    fs::write(&source_path, "create answer: integer = true;").unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_phnl"))
+        .args(["run-isolated", source_path.to_str().unwrap()]).output().unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Worker error"));
+    fs::remove_file(source_path).unwrap();
+}
+
 #[test]
 fn cli_builds_inspects_and_runs_phnb_files() {
     let source_path = temp_path("phnl");

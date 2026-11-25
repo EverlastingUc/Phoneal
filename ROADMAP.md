@@ -216,6 +216,20 @@ This phase defines message shape only. Request sequencing is tracked separately 
 
 This is a state-validation API only. It does not write to a transport, authenticate peers, authorize capability requests, or protect against replay across newly created sessions.
 
+### Phase 27 — Parent/Worker Process Separation
+
+**Implemented; CI verification pending.**
+
+- Added bounded stream reads/writes for PHIP frames, including truncated-header and truncated-payload rejection.
+- Added a hidden one-shot worker entry point to the Phoneal executable.
+- Added `phnl run-isolated <file.phnl>`; the parent performs bounded file admission and sends source over PHIP stdin/stdout.
+- The worker performs compilation and bytecode execution, then returns typed output, completion, or error frames.
+- Parent and worker validate the Hello handshake and active request ID.
+- Worker is launched with a cleared environment, piped protocol streams, and stderr disconnected from the protocol channel.
+- Added end-to-end tests for successful isolated execution, missing handshake rejection, and language-error propagation.
+
+This is an experimental process split only. The worker still inherits the parent OS identity, current directory, filesystem permissions, network access, and ambient OS privileges. There is no watchdog, OS resource limit, process-tree containment, peer authentication, or capability broker. Do not run untrusted programs with this command and treat it as a security sandbox.
+
 ## Latest verified implementation
 
 - Code commit: `0e216ab5339d597693ff1cfc685cb8c96e70d431`

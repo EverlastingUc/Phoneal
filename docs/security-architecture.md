@@ -1,6 +1,6 @@
 # Phoneal Security Architecture
 
-**Status:** Threat model, capability policy primitives, bounded IPC framing, typed payload schemas, and per-session sequencing primitives are implemented. No transport, peer authentication, worker process, or broker is implemented yet.
+**Status:** Threat model, capability policy primitives, bounded PHIP stream framing, typed payload schemas, per-session sequencing, and an experimental one-shot worker process are implemented. OS sandboxing, peer authentication, capability brokering, and worker resource enforcement are not implemented.
 
 This document defines the boundary required before Phoneal can be described as safe for untrusted programs. The current AST interpreter and bytecode VM are experimental in-process execution engines. Runtime checks and bytecode verification are defense-in-depth, not a security boundary.
 
@@ -169,9 +169,15 @@ Payload contracts:
 
 Unknown message kinds and capability identifiers, invalid version ranges, invalid UTF-8, incorrect fixed payload lengths, invalid boolean encodings, and empty execution/error messages are rejected.
 
-This remains a protocol library only. `Session` requires a request-zero Hello handshake, enforces endpoint message direction, permits one active request, matches responses to that request, and rejects non-monotonic request IDs within the session. It does not provide transport, peer authentication, capability authorization, or replay protection across newly created sessions. A valid frame or session transition is not proof that a message is authorized.
+The library now reads and writes bounded frames on byte streams. `Session` requires a request-zero Hello handshake, enforces endpoint message direction, permits one active request, matches responses to that request, and rejects non-monotonic request IDs within the session. This does not provide peer authentication, capability authorization, or replay protection across newly created sessions. A valid frame or session transition is not proof that a message is authorized.
 
-## 8. Required security test matrix
+## 8. Experimental worker process
+
+`phnl run-isolated <file.phnl>` starts a fresh copy of the Phoneal executable in hidden `__worker` mode. The parent reads source with the existing 1 MiB admission limit and sends it over stdin using PHIP frames. The worker performs compilation and bytecode execution, then returns bounded output/error frames over stdout. The worker starts with a cleared environment and null stderr; stdin/stdout are dedicated to the protocol. The parent validates the handshake and request ID and waits for worker termination.
+
+This is process separation, not a sandbox. The worker still inherits the parent working directory, user identity, filesystem permissions, network access, OS limits, and process privileges. There is no wall-clock watchdog, process-tree containment, authentication, or capability broker. The hidden worker entry point is not a security boundary against a hostile local user.
+
+## 9. Required security test matrix
 
 The sandbox release gate must include:
 
@@ -190,7 +196,7 @@ The sandbox release gate must include:
 
 A passing unit-test suite is necessary but not sufficient. Security review and hostile-input testing are release gates.
 
-## 9. Implementation sequence
+## 10. Implementation sequence
 
 1. Finalize capability names, scopes, and policy semantics.
 2. Define and test bounded IPC framing and typed payload schemas.
@@ -204,7 +210,7 @@ A passing unit-test suite is necessary but not sufficient. Security review and h
 10. Fuzz the decoder, verifier, VM, and IPC parser.
 11. Run the escape-test matrix and obtain independent security review.
 
-## 10. Current security statement
+## 11. Current security statement
 
 Phoneal currently has typed bytecode verification, runtime checks, and in-process execution budgets. It does **not** have capability enforcement, a restricted host interface, filesystem/network isolation, an OS-enforced memory limit, a parent-enforced wall-clock deadline, or a worker-process sandbox.
 
