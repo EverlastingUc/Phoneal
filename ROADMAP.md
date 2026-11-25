@@ -204,7 +204,7 @@ This phase defines message shape only. Request sequencing is tracked separately 
 
 ### Phase 26 — IPC Session Sequencing
 
-**Implementation in progress; CI verification pending.**
+**Complete and CI-verified.**
 
 - Added parent and worker endpoint roles.
 - Requires a request-zero protocol handshake before other messages.
@@ -218,9 +218,9 @@ This is a state-validation API only. It does not write to a transport, authentic
 
 ## Latest verified implementation
 
-- Code commit: `f23da5446e6f0e8732fff9d6a59c5d7a81d1ccd4`
-- CI: [Phoneal CI #45607797684](https://github.com/EverlastingUc/Phoneal/actions/runs/45607797684)
-- Tests: **158 passed, 0 failed** (101 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
+- Code commit: `0e216ab5339d597693ff1cfc685cb8c96e70d431`
+- CI: [Phoneal CI #45608071474](https://github.com/EverlastingUc/Phoneal/actions/runs/45608071474)
+- Tests: **162 passed, 0 failed** (105 unit, 42 compiler-pipeline, 8 bytecode integration, 4 CLI, 3 typed IR)
 
 ## Explicit exclusions
 
