@@ -28,7 +28,7 @@ pub enum MessageKind {
 impl TryFrom<u8> for MessageKind {
     type Error = ProtocolError;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, ProtocolError> {
         match value {
             1 => Ok(Self::Hello),
             2 => Ok(Self::RunSource),
@@ -441,7 +441,6 @@ impl Session {
 
 
 pub fn read_frame<R: std::io::Read>(reader: &mut R) -> Result<Option<Frame>, ProtocolError> {
-    use std::io::Read;
     let mut header = [0_u8; HEADER_LENGTH];
     loop {
         match reader.read(&mut header[..1]) {
@@ -470,7 +469,6 @@ pub fn read_frame<R: std::io::Read>(reader: &mut R) -> Result<Option<Frame>, Pro
 }
 
 pub fn write_frame<W: std::io::Write>(writer: &mut W, frame: &Frame) -> Result<(), ProtocolError> {
-    use std::io::Write;
     let bytes = frame.encode()?;
     writer.write_all(&bytes)
         .and_then(|()| writer.flush())
@@ -528,7 +526,7 @@ mod tests {
 
     #[test]
     fn stream_transport_rejects_truncated_header_and_payload() {
-        let mut short_header = b"PHIP".to_vec();
+        let short_header = b"PHIP".to_vec();
         assert!(read_frame(&mut short_header.as_slice()).is_err());
         let frame = Frame::from_message(1, &Message::RunSource("x".to_owned())).unwrap();
         let mut encoded = frame.encode().unwrap();

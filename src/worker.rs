@@ -124,7 +124,7 @@ pub fn serve_worker<R: Read, W: Write>(input: &mut R, output: &mut W) -> Result<
                 total = total.checked_add(line.len())
                     .filter(|size| *size <= MAX_CAPTURED_OUTPUT)
                     .ok_or("Program output exceeds the worker capture limit")?;
-                let frame = Frame::from_message(request_id, &Message::Stdout(line))
+                let frame = Frame::from_message(request_id, &Message::Stdout(line.into_bytes()))
                     .map_err(|error| error.to_string())?;
                 write_frame(output, &frame).map_err(|error| error.to_string())?;
             }
