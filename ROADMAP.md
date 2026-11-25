@@ -218,7 +218,7 @@ This is a state-validation API only. It does not write to a transport, authentic
 
 ### Phase 27 — Parent/Worker Process Separation
 
-**Implemented; CI verification pending.**
+**Complete and CI-verified.**
 
 - Added bounded stream reads/writes for PHIP frames, including truncated-header and truncated-payload rejection.
 - Added a hidden one-shot worker entry point to the Phoneal executable.
